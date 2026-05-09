@@ -213,5 +213,74 @@ namespace FullSummpotAPI.Controllers
 
             return Ok(comments);
         }
+
+        // DELETE POST
+
+        [HttpDelete("{postID}")]
+
+        public IActionResult DeletePost(int postID)
+        {
+            var post = _context.Posts
+                .FirstOrDefault(p => p.PostID == postID);
+
+            if (post == null)
+            {
+                return NotFound(new
+                {
+                    message = "Post not found"
+                });
+            }
+
+            // DELETE LIKES
+
+            var likes = _context.PostLikes
+                .Where(l => l.PostID == postID);
+
+            _context.PostLikes.RemoveRange(likes);
+
+            // DELETE COMMENTS
+
+            var comments = _context.Comments
+                .Where(c => c.PostID == postID);
+
+            _context.Comments.RemoveRange(comments);
+
+            // DELETE POST
+
+            _context.Posts.Remove(post);
+
+            _context.SaveChanges();
+
+            return Ok(new
+            {
+                message = "Post Deleted"
+            });
+        }
+
+        // EDIT POST
+
+        [HttpPut("{postID}")]
+
+        public IActionResult EditPost(int postID, Post updatedPost)
+        {
+            var post = _context.Posts
+                .FirstOrDefault(p => p.PostID == postID);
+
+            if (post == null)
+            {
+                return NotFound(new
+                {
+                    message = "Post not found"
+                });
+            }
+
+            post.Title = updatedPost.Title;
+
+            post.Content = updatedPost.Content;
+
+            _context.SaveChanges();
+
+            return Ok(post);
+        }
     }
 }

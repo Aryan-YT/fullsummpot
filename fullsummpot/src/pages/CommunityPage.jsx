@@ -26,6 +26,12 @@ function CommunityPage() {
 
   const [commentInputs, setCommentInputs] = useState({});
 
+  const [editingPostID, setEditingPostID] = useState(null);
+
+  const [editTitle, setEditTitle] = useState("");
+
+  const [editContent, setEditContent] = useState("");
+
   // OWNER CHECK
 
   const isOwner =
@@ -219,7 +225,7 @@ function CommunityPage() {
 
   };
 
-  // CREATE POST WITH IMAGE
+  // CREATE POST
 
   const createPost = async () => {
 
@@ -264,6 +270,62 @@ function CommunityPage() {
       console.log(error);
 
       alert("Only community owner can post");
+
+    }
+
+  };
+
+  // DELETE POST
+
+  const deletePost = async (postID) => {
+
+    try {
+
+      await API.delete(`/Posts/${postID}`);
+
+      fetchPosts();
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
+  // START EDIT
+
+  const startEdit = (post) => {
+
+    setEditingPostID(post.postID);
+
+    setEditTitle(post.title);
+
+    setEditContent(post.content);
+
+  };
+
+  // SAVE EDIT
+
+  const saveEdit = async (postID) => {
+
+    try {
+
+      await API.put(`/Posts/${postID}`, {
+
+        title: editTitle,
+
+        content: editContent
+
+      });
+
+      setEditingPostID(null);
+
+      fetchPosts();
+
+    } catch (error) {
+
+      console.log(error);
 
     }
 
@@ -322,8 +384,6 @@ function CommunityPage() {
                 className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
               />
 
-              {/* IMAGE INPUT */}
-
               <input
                 type="file"
                 onChange={(e) => setImage(e.target.files[0])}
@@ -354,13 +414,42 @@ function CommunityPage() {
               className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-6 shadow-2xl"
             >
 
-              <h2 className="text-2xl font-bold text-white mb-3">
-                {post.title}
-              </h2>
+              {/* TITLE */}
 
-              <p className="text-slate-300 text-lg mb-5">
-                {renderWithLinks(post.content)}
-              </p>
+              {editingPostID === post.postID ? (
+
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-3"
+                />
+
+              ) : (
+
+                <h2 className="text-2xl font-bold text-white mb-3">
+                  {post.title}
+                </h2>
+
+              )}
+
+              {/* CONTENT */}
+
+              {editingPostID === post.postID ? (
+
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-5"
+                />
+
+              ) : (
+
+                <p className="text-slate-300 text-lg mb-5">
+                  {renderWithLinks(post.content)}
+                </p>
+
+              )}
 
               {/* POST IMAGE */}
 
@@ -371,6 +460,43 @@ function CommunityPage() {
                   alt="Post"
                   className="w-full rounded-2xl mb-5"
                 />
+
+              )}
+
+              {/* EDIT + DELETE */}
+
+              {isOwner && (
+
+                <div className="flex gap-3 mb-5">
+
+                  {editingPostID === post.postID ? (
+
+                    <button
+                      onClick={() => saveEdit(post.postID)}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded-xl transition-all"
+                    >
+                      Save
+                    </button>
+
+                  ) : (
+
+                    <button
+                      onClick={() => startEdit(post)}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded-xl transition-all"
+                    >
+                      Edit
+                    </button>
+
+                  )}
+
+                  <button
+                    onClick={() => deletePost(post.postID)}
+                    className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-xl transition-all"
+                  >
+                    Delete
+                  </button>
+
+                </div>
 
               )}
 
