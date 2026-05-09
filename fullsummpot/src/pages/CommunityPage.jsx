@@ -20,6 +20,10 @@ function CommunityPage() {
 
   const [likes, setLikes] = useState({});
 
+  const [comments, setComments] = useState({});
+
+  const [commentInputs, setCommentInputs] = useState({});
+
   // OWNER CHECK
 
   const isOwner =
@@ -62,11 +66,13 @@ function CommunityPage() {
 
       setPosts(response.data);
 
-      // FETCH LIKE COUNTS
+      // FETCH LIKES + COMMENTS
 
       response.data.forEach((post) => {
 
         fetchLikes(post.postID);
+
+        fetchComments(post.postID);
 
       });
 
@@ -102,7 +108,7 @@ function CommunityPage() {
 
   };
 
-  // LIKE / UNLIKE POST
+  // LIKE POST
 
   const likePost = async (postID) => {
 
@@ -116,6 +122,62 @@ function CommunityPage() {
       });
 
       fetchLikes(postID);
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
+  // FETCH COMMENTS
+
+  const fetchComments = async (postID) => {
+
+    try {
+
+      const response = await API.get(`/Posts/${postID}/comments`);
+
+      setComments((prev) => ({
+
+        ...prev,
+
+        [postID]: response.data
+
+      }));
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
+  // ADD COMMENT
+
+  const addComment = async (postID) => {
+
+    try {
+
+      await API.post("/Posts/comment", {
+
+        content: commentInputs[postID],
+        userID: parseInt(user.UserID),
+        postID: postID
+
+      });
+
+      setCommentInputs((prev) => ({
+
+        ...prev,
+
+        [postID]: ""
+
+      }));
+
+      fetchComments(postID);
 
     } catch (error) {
 
@@ -181,7 +243,7 @@ function CommunityPage() {
 
         )}
 
-        {/* CREATE POST - ONLY OWNER */}
+        {/* CREATE POST */}
 
         {isOwner && (
 
@@ -244,10 +306,60 @@ function CommunityPage() {
 
               <button
                 onClick={() => likePost(post.postID)}
-                className="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2 rounded-xl transition-all"
+                className="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2 rounded-xl transition-all mb-5"
               >
                 ❤️ {likes[post.postID] || 0} Likes
               </button>
+
+              {/* COMMENT INPUT */}
+
+              <div className="mb-5 space-y-3">
+
+                <input
+                  type="text"
+                  placeholder="Write a comment..."
+                  value={commentInputs[post.postID] || ""}
+                  onChange={(e) =>
+                    setCommentInputs((prev) => ({
+
+                      ...prev,
+
+                      [post.postID]: e.target.value
+
+                    }))
+                  }
+                  className="w-full p-3 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
+                />
+
+                <button
+                  onClick={() => addComment(post.postID)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl transition-all"
+                >
+                  Add Comment
+                </button>
+
+              </div>
+
+              {/* COMMENTS */}
+
+              <div className="space-y-3">
+
+                {(comments[post.postID] || []).map((comment) => (
+
+                  <div
+                    key={comment.commentID}
+                    className="bg-slate-900/60 p-4 rounded-xl border border-slate-700"
+                  >
+
+                    <p className="text-slate-200">
+                      {comment.content}
+                    </p>
+
+                  </div>
+
+                ))}
+
+              </div>
 
             </div>
 

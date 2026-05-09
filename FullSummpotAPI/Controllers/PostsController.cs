@@ -134,5 +134,32 @@ namespace FullSummpotAPI.Controllers
                 count = likes
             });
         }
+
+        // ADD COMMENT
+
+        [HttpPost("comment")]
+
+        public IActionResult AddComment(Comment comment)
+        {
+            _context.Comments.Add(comment);
+
+            _context.SaveChanges();
+
+            return Ok(comment);
+        }
+
+        // GET COMMENTS OF POST
+
+        [HttpGet("{postID}/comments")]
+
+        public IActionResult GetComments(int postID)
+        {
+            var comments = _context.Comments
+                .Where(c => c.PostID == postID)
+                .OrderByDescending(c => c.CreatedAt)
+                .ToList();
+
+            return Ok(comments);
+        }
     }
 }
