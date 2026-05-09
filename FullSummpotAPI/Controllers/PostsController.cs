@@ -21,12 +21,8 @@ namespace FullSummpotAPI.Controllers
 
         public IActionResult CreatePost(Post post)
         {
-            // FIND COMMUNITY
-
             var community = _context.Communities
                 .FirstOrDefault(c => c.CommunityID == post.CommunityID);
-
-            // COMMUNITY NOT FOUND
 
             if (community == null)
             {
@@ -45,8 +41,6 @@ namespace FullSummpotAPI.Controllers
                     message = "Only community owner can post"
                 });
             }
-
-            // CREATE POST
 
             _context.Posts.Add(post);
 
@@ -80,6 +74,65 @@ namespace FullSummpotAPI.Controllers
                 .ToList();
 
             return Ok(posts);
+        }
+
+        // LIKE / UNLIKE POST
+
+        [HttpPost("like")]
+
+        public IActionResult LikePost(LikePostModel model)
+        {
+            var existingLike = _context.PostLikes
+                .FirstOrDefault(l =>
+                    l.UserID == model.UserID &&
+                    l.PostID == model.PostID
+                );
+
+            // UNLIKE
+
+            if (existingLike != null)
+            {
+                _context.PostLikes.Remove(existingLike);
+
+                _context.SaveChanges();
+
+                return Ok(new
+                {
+                    message = "Post Unliked"
+                });
+            }
+
+            // LIKE
+
+            var like = new PostLike
+            {
+                UserID = model.UserID,
+                PostID = model.PostID
+            };
+
+            _context.PostLikes.Add(like);
+
+            _context.SaveChanges();
+
+            return Ok(new
+            {
+                message = "Post Liked"
+            });
+        }
+
+        // GET POST LIKE COUNT
+
+        [HttpGet("{postID}/likes")]
+
+        public IActionResult GetPostLikes(int postID)
+        {
+            var likes = _context.PostLikes
+                .Count(l => l.PostID == postID);
+
+            return Ok(new
+            {
+                count = likes
+            });
         }
     }
 }

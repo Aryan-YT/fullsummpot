@@ -17,5 +17,7 @@ namespace FullSummpotAPI.Data
         public DbSet<CommunityMember> CommunityMembers { get; set; }
 
         public DbSet<Post> Posts { get; set; }
+
+        public DbSet<PostLike> PostLikes { get; set; }
     }
 }

@@ -18,6 +18,8 @@ function CommunityPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
+  const [likes, setLikes] = useState({});
+
   // OWNER CHECK
 
   const isOwner =
@@ -59,6 +61,61 @@ function CommunityPage() {
       const response = await API.get(`/Posts/community/${id}`);
 
       setPosts(response.data);
+
+      // FETCH LIKE COUNTS
+
+      response.data.forEach((post) => {
+
+        fetchLikes(post.postID);
+
+      });
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
+  // FETCH LIKES
+
+  const fetchLikes = async (postID) => {
+
+    try {
+
+      const response = await API.get(`/Posts/${postID}/likes`);
+
+      setLikes((prev) => ({
+
+        ...prev,
+
+        [postID]: response.data.count
+
+      }));
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
+  // LIKE / UNLIKE POST
+
+  const likePost = async (postID) => {
+
+    try {
+
+      await API.post("/Posts/like", {
+
+        userID: parseInt(user.UserID),
+        postID: postID
+
+      });
+
+      fetchLikes(postID);
 
     } catch (error) {
 
@@ -179,9 +236,18 @@ function CommunityPage() {
                 {post.title}
               </h2>
 
-              <p className="text-slate-300 text-lg">
+              <p className="text-slate-300 text-lg mb-5">
                 {post.content}
               </p>
+
+              {/* LIKE BUTTON */}
+
+              <button
+                onClick={() => likePost(post.postID)}
+                className="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2 rounded-xl transition-all"
+              >
+                ❤️ {likes[post.postID] || 0} Likes
+              </button>
 
             </div>
 
