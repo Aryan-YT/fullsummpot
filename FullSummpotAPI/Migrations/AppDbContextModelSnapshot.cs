@@ -41,6 +41,9 @@ namespace FullSummpotAPI.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<int>("OwnerID")
+                        .HasColumnType("int");
+
                     b.HasKey("CommunityID");
 
                     b.ToTable("Communities");

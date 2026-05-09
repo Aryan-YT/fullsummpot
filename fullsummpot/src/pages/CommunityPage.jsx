@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import { useParams } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
@@ -18,6 +17,12 @@ function CommunityPage() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+
+  // OWNER CHECK
+
+  const isOwner =
+    community &&
+    parseInt(user.UserID) === community.ownerID;
 
   useEffect(() => {
 
@@ -87,6 +92,8 @@ function CommunityPage() {
 
       console.log(error);
 
+      alert("Only community owner can post");
+
     }
 
   };
@@ -117,41 +124,45 @@ function CommunityPage() {
 
         )}
 
-        {/* CREATE POST */}
+        {/* CREATE POST - ONLY OWNER */}
 
-        <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-6 shadow-2xl mb-10">
+        {isOwner && (
 
-          <h2 className="text-2xl text-white font-bold mb-5">
-            Create Post
-          </h2>
+          <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-6 shadow-2xl mb-10">
 
-          <div className="space-y-4">
+            <h2 className="text-2xl text-white font-bold mb-5">
+              Create Post
+            </h2>
 
-            <input
-              type="text"
-              placeholder="Post Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
-            />
+            <div className="space-y-4">
 
-            <textarea
-              placeholder="Share something..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
-            />
+              <input
+                type="text"
+                placeholder="Post Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
+              />
 
-            <button
-              onClick={createPost}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all"
-            >
-              Post
-            </button>
+              <textarea
+                placeholder="Share something..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
+              />
+
+              <button
+                onClick={createPost}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all"
+              >
+                Post
+              </button>
+
+            </div>
 
           </div>
 
-        </div>
+        )}
 
         {/* POSTS */}
 

@@ -17,21 +17,22 @@ namespace FullSummpotAPI.Controllers
         }
 
         // CREATE COMMUNITY
+
         [HttpPost]
+
         public IActionResult CreateCommunity(Community community)
         {
             _context.Communities.Add(community);
 
             _context.SaveChanges();
 
-            return Ok(new
-            {
-                message = "Community Created!"
-            });
+            return Ok(community);
         }
 
         // GET ALL COMMUNITIES
+
         [HttpGet]
+
         public IActionResult GetCommunities()
         {
             var communities = _context.Communities.ToList();
@@ -39,7 +40,30 @@ namespace FullSummpotAPI.Controllers
             return Ok(communities);
         }
 
+        // GET SINGLE COMMUNITY
+
+        [HttpGet("{id}")]
+
+        public IActionResult GetCommunity(int id)
+        {
+            var community = _context.Communities
+                .FirstOrDefault(c => c.CommunityID == id);
+
+            if (community == null)
+            {
+                return NotFound(new
+                {
+                    message = "Community not found"
+                });
+            }
+
+            return Ok(community);
+        }
+
+        // JOIN COMMUNITY
+
         [HttpPost("join")]
+
         public IActionResult JoinCommunity(JoinCommunityModel model)
         {
             var alreadyJoined = _context.CommunityMembers

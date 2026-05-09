@@ -54,10 +54,21 @@ function Dashboard() {
 
     try {
 
-      await API.post("/Communities", {
+      const response = await API.post("/Communities", {
 
         name,
-        description
+        description,
+        ownerID: parseInt(user.UserID)
+
+      });
+
+      // AUTO JOIN OWNER
+
+      await API.post("/Communities/join", {
+
+        userID: parseInt(user.UserID),
+
+        communityID: response.data.communityID
 
       });
 
@@ -173,22 +184,42 @@ function Dashboard() {
                 {community.name}
               </h2>
 
-              <p className="text-slate-300">
+              <p className="text-slate-300 mb-4">
                 {community.description}
               </p>
 
-              <button
-                onClick={(e) => {
+              {/* OWNER BADGE */}
 
-                  e.stopPropagation();
+              {parseInt(user.UserID) === community.ownerID && (
 
-                  joinCommunity(community.communityID);
+                <div className="mb-4">
 
-                }}
-                className="mt-5 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl transition-all"
-              >
-                Join Community
-              </button>
+                  <span className="bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-bold">
+                    Owner
+                  </span>
+
+                </div>
+
+              )}
+
+              {/* JOIN BUTTON */}
+
+              {parseInt(user.UserID) !== community.ownerID && (
+
+                <button
+                  onClick={(e) => {
+
+                    e.stopPropagation();
+
+                    joinCommunity(community.communityID);
+
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl transition-all"
+                >
+                  Join Community
+                </button>
+
+              )}
 
             </div>
 
