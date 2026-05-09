@@ -3,10 +3,13 @@ import { useNavigate } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
 import API from "../services/api";
+import { getUserData } from "../utils/auth";
 
 function Dashboard() {
 
   const navigate = useNavigate();
+
+  const user = getUserData();
 
   const [communities, setCommunities] = useState([]);
 
@@ -52,8 +55,10 @@ function Dashboard() {
     try {
 
       await API.post("/Communities", {
+
         name,
         description
+
       });
 
       setName("");
@@ -77,7 +82,7 @@ function Dashboard() {
 
       await API.post("/Communities/join", {
 
-        userID: 1,
+        userID: parseInt(user.UserID),
         communityID: communityID
 
       });
@@ -101,6 +106,8 @@ function Dashboard() {
       <Navbar />
 
       <div className="p-8">
+
+        {/* HEADER */}
 
         <div className="mb-10">
 
@@ -158,7 +165,8 @@ function Dashboard() {
 
             <div
               key={community.communityID}
-              className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-6 shadow-2xl"
+              onClick={() => navigate(`/community/${community.communityID}`)}
+              className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-6 shadow-2xl cursor-pointer hover:scale-105 transition-all"
             >
 
               <h2 className="text-2xl font-bold text-white mb-3">
@@ -170,7 +178,13 @@ function Dashboard() {
               </p>
 
               <button
-                onClick={() => joinCommunity(community.communityID)}
+                onClick={(e) => {
+
+                  e.stopPropagation();
+
+                  joinCommunity(community.communityID);
+
+                }}
                 className="mt-5 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl transition-all"
               >
                 Join Community
