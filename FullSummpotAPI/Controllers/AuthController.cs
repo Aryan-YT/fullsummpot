@@ -80,6 +80,8 @@ namespace FullSummpotAPI.Controllers
             // JWT TOKEN
             var claims = new[]
             {
+                new Claim("UserID", user.UserID.ToString()),
+                new Claim("Username", user.Username),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.Role)

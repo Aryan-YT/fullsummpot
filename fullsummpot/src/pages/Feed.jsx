@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 
 import Navbar from "../components/Navbar";
 import API from "../services/api";
+import { getUserData } from "../utils/auth";
 
 function Feed() {
+
+  const user = getUserData();
 
   const [posts, setPosts] = useState([]);
 
@@ -15,6 +18,8 @@ function Feed() {
     fetchPosts();
 
   }, []);
+
+  // FETCH POSTS
 
   const fetchPosts = async () => {
 
@@ -32,6 +37,8 @@ function Feed() {
 
   };
 
+  // CREATE POST
+
   const createPost = async () => {
 
     try {
@@ -40,7 +47,7 @@ function Feed() {
 
         title,
         content,
-        userID: 1,
+        userID: parseInt(user.UserID),
         communityID: 1
 
       });
