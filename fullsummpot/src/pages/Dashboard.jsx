@@ -27,6 +27,8 @@ function Dashboard() {
 
   }, [navigate]);
 
+  // FETCH COMMUNITIES
+
   const fetchCommunities = async () => {
 
     try {
@@ -42,6 +44,8 @@ function Dashboard() {
     }
 
   };
+
+  // CREATE COMMUNITY
 
   const createCommunity = async () => {
 
@@ -60,6 +64,31 @@ function Dashboard() {
     } catch (error) {
 
       console.log(error);
+
+    }
+
+  };
+
+  // JOIN COMMUNITY
+
+  const joinCommunity = async (communityID) => {
+
+    try {
+
+      await API.post("/Communities/join", {
+
+        userID: 1,
+        communityID: communityID
+
+      });
+
+      alert("Joined Community!");
+
+    } catch (error) {
+
+      console.log(error);
+
+      alert("Already Joined");
 
     }
 
@@ -139,6 +168,13 @@ function Dashboard() {
               <p className="text-slate-300">
                 {community.description}
               </p>
+
+              <button
+                onClick={() => joinCommunity(community.communityID)}
+                className="mt-5 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl transition-all"
+              >
+                Join Community
+              </button>
 
             </div>
 
