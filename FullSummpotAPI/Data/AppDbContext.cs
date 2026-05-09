@@ -11,5 +11,7 @@ namespace FullSummpotAPI.Data
         }
 
         public DbSet<User> Users { get; set; }
+
+        public DbSet<Community> Communities { get; set; }
     }
 }
