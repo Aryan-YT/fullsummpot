@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using FullSummpotAPI.Data;
 using FullSummpotAPI.Models;
@@ -36,6 +37,39 @@ namespace FullSummpotAPI.Controllers
             var communities = _context.Communities.ToList();
 
             return Ok(communities);
+        }
+
+        [HttpPost("join")]
+        public IActionResult JoinCommunity(JoinCommunityModel model)
+        {
+            var alreadyJoined = _context.CommunityMembers
+                .FirstOrDefault(m =>
+                    m.UserID == model.UserID &&
+                    m.CommunityID == model.CommunityID
+                );
+
+            if (alreadyJoined != null)
+            {
+                return BadRequest(new
+                {
+                    message = "Already Joined"
+                });
+            }
+
+            var member = new CommunityMember
+            {
+                UserID = model.UserID,
+                CommunityID = model.CommunityID
+            };
+
+            _context.CommunityMembers.Add(member);
+
+            _context.SaveChanges();
+
+            return Ok(new
+            {
+                message = "Joined Community!"
+            });
         }
     }
 }
