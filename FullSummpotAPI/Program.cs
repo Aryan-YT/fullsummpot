@@ -45,6 +45,8 @@ app.UseCors("AllowReact");
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+
 app.UseAuthorization();
 
 app.MapControllers();

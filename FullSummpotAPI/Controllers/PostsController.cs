@@ -15,14 +15,20 @@ namespace FullSummpotAPI.Controllers
             _context = context;
         }
 
-        // CREATE POST
+        // CREATE POST WITH IMAGE
 
         [HttpPost]
 
-        public IActionResult CreatePost(Post post)
+        public async Task<IActionResult> CreatePost(
+            [FromForm] string title,
+            [FromForm] string content,
+            [FromForm] int userID,
+            [FromForm] int communityID,
+            IFormFile? image
+        )
         {
             var community = _context.Communities
-                .FirstOrDefault(c => c.CommunityID == post.CommunityID);
+                .FirstOrDefault(c => c.CommunityID == communityID);
 
             if (community == null)
             {
@@ -34,13 +40,59 @@ namespace FullSummpotAPI.Controllers
 
             // ONLY OWNER CAN POST
 
-            if (community.OwnerID != post.UserID)
+            if (community.OwnerID != userID)
             {
                 return BadRequest(new
                 {
                     message = "Only community owner can post"
                 });
             }
+
+            string? imageUrl = null;
+
+            // IMAGE UPLOAD
+
+            if (image != null)
+            {
+                var uploadsFolder = Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot/uploads"
+                );
+
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var fileName =
+                    Guid.NewGuid().ToString() +
+                    Path.GetExtension(image.FileName);
+
+                var filePath = Path.Combine(
+                    uploadsFolder,
+                    fileName
+                );
+
+                using (var stream = new FileStream(
+                    filePath,
+                    FileMode.Create
+                ))
+                {
+                    await image.CopyToAsync(stream);
+                }
+
+                imageUrl =
+                    $"http://localhost:5242/uploads/{fileName}";
+            }
+
+            var post = new Post
+            {
+                Title = title,
+                Content = content,
+                UserID = userID,
+                CommunityID = communityID,
+                ImageUrl = imageUrl
+            };
 
             _context.Posts.Add(post);
 

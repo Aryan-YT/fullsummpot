@@ -18,6 +18,8 @@ function CommunityPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
+  const [image, setImage] = useState(null);
+
   const [likes, setLikes] = useState({});
 
   const [comments, setComments] = useState({});
@@ -37,6 +39,38 @@ function CommunityPage() {
     fetchPosts();
 
   }, [id]);
+
+  // CLICKABLE LINKS
+
+  const renderWithLinks = (text) => {
+
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+    return text.split(urlRegex).map((part, index) => {
+
+      if (part.match(urlRegex)) {
+
+        return (
+
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 underline break-all"
+          >
+            {part}
+          </a>
+
+        );
+
+      }
+
+      return part;
+
+    });
+
+  };
 
   // FETCH COMMUNITY
 
@@ -65,8 +99,6 @@ function CommunityPage() {
       const response = await API.get(`/Posts/community/${id}`);
 
       setPosts(response.data);
-
-      // FETCH LIKES + COMMENTS
 
       response.data.forEach((post) => {
 
@@ -187,23 +219,43 @@ function CommunityPage() {
 
   };
 
-  // CREATE POST
+  // CREATE POST WITH IMAGE
 
   const createPost = async () => {
 
     try {
 
-      await API.post("/Posts", {
+      const formData = new FormData();
 
-        title,
-        content,
-        userID: parseInt(user.UserID),
-        communityID: parseInt(id)
+      formData.append("title", title);
+
+      formData.append("content", content);
+
+      formData.append("userID", parseInt(user.UserID));
+
+      formData.append("communityID", parseInt(id));
+
+      if (image) {
+
+        formData.append("image", image);
+
+      }
+
+      await API.post("/Posts", formData, {
+
+        headers: {
+
+          "Content-Type": "multipart/form-data"
+
+        }
 
       });
 
       setTitle("");
+
       setContent("");
+
+      setImage(null);
 
       fetchPosts();
 
@@ -270,6 +322,14 @@ function CommunityPage() {
                 className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
               />
 
+              {/* IMAGE INPUT */}
+
+              <input
+                type="file"
+                onChange={(e) => setImage(e.target.files[0])}
+                className="text-white"
+              />
+
               <button
                 onClick={createPost}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all"
@@ -299,8 +359,20 @@ function CommunityPage() {
               </h2>
 
               <p className="text-slate-300 text-lg mb-5">
-                {post.content}
+                {renderWithLinks(post.content)}
               </p>
+
+              {/* POST IMAGE */}
+
+              {post.imageUrl && (
+
+                <img
+                  src={post.imageUrl}
+                  alt="Post"
+                  className="w-full rounded-2xl mb-5"
+                />
+
+              )}
 
               {/* LIKE BUTTON */}
 
@@ -352,7 +424,7 @@ function CommunityPage() {
                   >
 
                     <p className="text-slate-200">
-                      {comment.content}
+                      {renderWithLinks(comment.content)}
                     </p>
 
                   </div>
