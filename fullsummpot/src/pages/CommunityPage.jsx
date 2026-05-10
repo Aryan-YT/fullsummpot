@@ -394,7 +394,7 @@ function CommunityPage() {
 
       <Navbar />
 
-      <div className="max-w-5xl mx-auto p-8">
+      <div className="max-w-5xl mx-auto p-4 md:p-8">
 
         {/* COMMUNITY INFO */}
 
@@ -402,11 +402,11 @@ function CommunityPage() {
 
         {community && (
 
-          <div className="relative mb-12 rounded-[35px] overflow-hidden border border-white/10 shadow-2xl">
+          <div className="relative mb-12 rounded-3xl md:rounded-[35px] overflow-hidden border border-white/10 shadow-2xl">
 
             {/* BANNER */}
 
-            <div className="h-[350px] relative">
+            <div className="h-[250px] md:h-[350px] relative">
 
               {community.bannerUrl ? (
 
@@ -428,11 +428,11 @@ function CommunityPage() {
 
               {/* CONTENT */}
 
-              <div className="absolute bottom-0 left-0 w-full p-10">
+              <div className="absolute bottom-0 left-0 w-full p-4 md:p-10">
 
-                <div className="flex items-center gap-4 mb-4">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
 
-                  <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-lg border border-white/20 flex items-center justify-center text-white text-4xl font-bold">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white/10 backdrop-blur-lg border border-white/20 flex items-center justify-center text-white text-4xl font-bold">
 
                     {community.name?.charAt(0)}
 
@@ -440,13 +440,13 @@ function CommunityPage() {
 
                   <div>
 
-                    <h1 className="text-6xl font-black text-white mb-2 tracking-tight">
+                    <h1 className="text-3xl md:text-6xl font-black text-white mb-2 tracking-tight text-center md:text-left">
 
                       {community.name}
 
                     </h1>
 
-                    <p className="text-slate-300 text-lg">
+                    <p className="text-slate-300 text-sm md:text-lg text-center md:text-left">
 
                       {community.description}
 
@@ -508,7 +508,7 @@ function CommunityPage() {
 
         {isOwner && (
 
-          <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-6 shadow-2xl mb-10">
+          <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-4 md:p-6 shadow-2xl mb-10">
 
             <h2 className="text-2xl text-white font-bold mb-5">
               Create Post
@@ -558,12 +558,12 @@ function CommunityPage() {
 
             <div
               key={post.postID}
-              className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-6 shadow-2xl"
+              className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-4 md:p-6 shadow-2xl"
             >
 
               {/* PROFILE */}
 
-              <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center gap-3 mb-5 flex-wrap">
 
                 {post.profileImageUrl ? (
 
@@ -617,7 +617,7 @@ function CommunityPage() {
 
               ) : (
 
-                <h2 className="text-2xl font-bold text-white mb-3">
+                <h2 className="text-xl md:text-2xl font-bold text-white mb-3">
                   {post.title}
                 </h2>
 
@@ -635,7 +635,7 @@ function CommunityPage() {
 
               ) : (
 
-                <p className="text-slate-300 text-lg mb-5">
+                <p className="text-slate-300 text-base md:text-lg mb-5 break-words">
                   {renderWithLinks(post.content)}
                 </p>
 
@@ -657,7 +657,7 @@ function CommunityPage() {
 
               {isOwner && (
 
-                <div className="flex gap-3 mb-5">
+                <div className="flex flex-wrap gap-3 mb-5">
 
                   {editingPostID === post.postID ? (
 
@@ -701,7 +701,7 @@ function CommunityPage() {
 
               {/* COMMENT INPUT */}
 
-              <div className="mb-5 space-y-3">
+              <div className="mb-5 space-y-3 w-full">
 
                 <input
                   type="text"

@@ -392,17 +392,17 @@ function Dashboard() {
 
       <Navbar />
 
-      <div className="p-8">
+      <div className="p-4 md:p-8">
 
         {/* HEADER */}
 
         <div className="mb-10">
 
-          <h1 className="text-5xl font-bold text-white mb-3">
+          <h1 className="text-3xl md:text-5xl font-bold text-white mb-3">
             Communities 🚀
           </h1>
 
-          <p className="text-slate-400 text-lg">
+          <p className="text-slate-400 text-base md:text-lg">
             Create and explore communities.
           </p>
 
@@ -421,7 +421,7 @@ function Dashboard() {
                 e.target.value
               )
             }
-            className="w-full p-4 rounded-2xl bg-slate-900/70 border border-slate-700 text-white outline-none"
+            className="w-full p-3 md:p-4 rounded-2xl bg-slate-900/70 border border-slate-700 text-white outline-none"
           />
 
           {/* SUGGESTIONS */}
@@ -518,7 +518,7 @@ function Dashboard() {
 
         {/* CREATE COMMUNITY */}
 
-        <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-6 shadow-2xl mb-10">
+        <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-4 md:p-6 shadow-2xl mb-10">
 
           <h2 className="text-2xl text-white font-bold mb-5">
             Create Community
@@ -611,7 +611,7 @@ function Dashboard() {
 
                     <div className="p-6">
 
-                      <h2 className="text-4xl font-bold text-white">
+                      <h2 className="text-2xl md:text-4xl font-bold text-white">
                         {community.name}
                       </h2>
 
@@ -621,7 +621,7 @@ function Dashboard() {
 
                 </div>
 
-                <div className="p-6">
+                <div className="p-4 md:p-6">
 
                   <p className="text-slate-300 mb-5">
                     {community.description}
@@ -633,7 +633,7 @@ function Dashboard() {
                     ) ===
                       community.ownerID ? (
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
 
                       <button
                         onClick={(e) => {
