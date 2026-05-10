@@ -4,7 +4,11 @@ namespace FullSummpotAPI.Models
     {
         public int UserFollowID { get; set; }
 
+        // USER WHO FOLLOWS
+
         public int FollowerID { get; set; }
+
+        // USER WHO IS BEING FOLLOWED
 
         public int FollowingID { get; set; }
 

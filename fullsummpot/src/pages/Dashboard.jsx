@@ -13,14 +13,22 @@ function Dashboard() {
 
   const [communities, setCommunities] = useState([]);
 
-  const [filteredCommunities, setFilteredCommunities]
+  const [filteredCommunities,
+    setFilteredCommunities]
     = useState([]);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch]
+    = useState("");
 
-  const [name, setName] = useState("");
+  const [filteredUsers,
+    setFilteredUsers]
+    = useState([]);
 
-  const [description, setDescription]
+  const [name, setName]
+    = useState("");
+
+  const [description,
+    setDescription]
     = useState("");
 
   const [banner, setBanner]
@@ -30,7 +38,8 @@ function Dashboard() {
     setEditingCommunityID]
     = useState(null);
 
-  const [editName, setEditName]
+  const [editName,
+    setEditName]
     = useState("");
 
   const [editDescription,
@@ -41,7 +50,7 @@ function Dashboard() {
     setEditBanner]
     = useState(null);
 
-  // GUEST MODE
+  // FETCH COMMUNITIES
 
   useEffect(() => {
 
@@ -65,6 +74,8 @@ function Dashboard() {
 
   useEffect(() => {
 
+    // COMMUNITY FILTER
+
     const filtered =
       communities.filter((community) =>
         community.name
@@ -74,7 +85,21 @@ function Dashboard() {
           )
       );
 
-    setFilteredCommunities(filtered);
+    setFilteredCommunities(
+      filtered
+    );
+
+    // USER SEARCH
+
+    if (search.trim() !== "") {
+
+      searchUsers();
+
+    } else {
+
+      setFilteredUsers([]);
+
+    }
 
   }, [search, communities]);
 
@@ -101,6 +126,29 @@ function Dashboard() {
 
   };
 
+  // SEARCH USERS
+
+  const searchUsers = async () => {
+
+    try {
+
+      const response =
+        await API.get(
+          `/Auth/search?username=${search}`
+        );
+
+      setFilteredUsers(
+        response.data
+      );
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
+  };
+
   // CREATE COMMUNITY
 
   const createCommunity = async () => {
@@ -115,7 +163,8 @@ function Dashboard() {
 
     try {
 
-      const formData = new FormData();
+      const formData =
+        new FormData();
 
       formData.append(
         "name",
@@ -204,18 +253,21 @@ function Dashboard() {
           userID:
             parseInt(user.UserID),
 
-          communityID:
-            communityID
+          communityID
         }
       );
 
-      alert("Joined Community!");
+      alert(
+        "Joined Community!"
+      );
 
     } catch (error) {
 
       console.log(error);
 
-      alert("Already Joined");
+      alert(
+        "Already Joined"
+      );
 
     }
 
@@ -253,7 +305,9 @@ function Dashboard() {
 
   // START EDIT
 
-  const startEdit = (community) => {
+  const startEdit = (
+    community
+  ) => {
 
     setEditingCommunityID(
       community.communityID
@@ -285,7 +339,8 @@ function Dashboard() {
 
     try {
 
-      const formData = new FormData();
+      const formData =
+        new FormData();
 
       formData.append(
         "name",
@@ -317,7 +372,9 @@ function Dashboard() {
         }
       );
 
-      setEditingCommunityID(null);
+      setEditingCommunityID(
+        null
+      );
 
       fetchCommunities();
 
@@ -357,10 +414,12 @@ function Dashboard() {
 
           <input
             type="text"
-            placeholder="Search communities..."
+            placeholder="Search communities or users..."
             value={search}
             onChange={(e) =>
-              setSearch(e.target.value)
+              setSearch(
+                e.target.value
+              )
             }
             className="w-full p-4 rounded-2xl bg-slate-900/70 border border-slate-700 text-white outline-none"
           />
@@ -370,6 +429,8 @@ function Dashboard() {
           {search && (
 
             <div className="bg-slate-900/80 border border-slate-700 rounded-2xl mt-3 overflow-hidden">
+
+              {/* COMMUNITIES */}
 
               {filteredCommunities
                 .slice(0, 5)
@@ -386,7 +447,65 @@ function Dashboard() {
                     }
                     className="p-4 text-white hover:bg-slate-800 cursor-pointer border-b border-slate-700"
                   >
+
+                    <span className="text-blue-400 mr-2">
+                      Community:
+                    </span>
+
                     {community.name}
+
+                  </div>
+
+                ))}
+
+              {/* USERS */}
+
+              {filteredUsers
+                .slice(0, 5)
+                .map((searchedUser) => (
+
+                  <div
+                    key={
+                      searchedUser.userID
+                    }
+                    onClick={() =>
+                      navigate(
+                        `/profile/${searchedUser.userID}`
+                      )
+                    }
+                    className="p-4 text-white hover:bg-slate-800 cursor-pointer border-b border-slate-700 flex items-center gap-3"
+                  >
+
+                    {searchedUser.profileImageUrl ? (
+
+                      <img
+                        src={
+                          searchedUser.profileImageUrl
+                        }
+                        alt="Profile"
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+
+                    ) : (
+
+                      <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold">
+
+                        {searchedUser.username?.charAt(0)}
+
+                      </div>
+
+                    )}
+
+                    <div>
+
+                      <span className="text-green-400 mr-2">
+                        User:
+                      </span>
+
+                      {searchedUser.username}
+
+                    </div>
+
                   </div>
 
                 ))}
@@ -412,7 +531,9 @@ function Dashboard() {
               placeholder="Community Name"
               value={name}
               onChange={(e) =>
-                setName(e.target.value)
+                setName(
+                  e.target.value
+                )
               }
               className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
             />
@@ -421,7 +542,9 @@ function Dashboard() {
               placeholder="Description"
               value={description}
               onChange={(e) =>
-                setDescription(e.target.value)
+                setDescription(
+                  e.target.value
+                )
               }
               className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
             />
@@ -466,8 +589,6 @@ function Dashboard() {
                 className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
               >
 
-                {/* BANNER */}
-
                 <div className="relative h-52">
 
                   {community.bannerUrl ? (
@@ -486,8 +607,6 @@ function Dashboard() {
 
                   )}
 
-                  {/* OVERLAY */}
-
                   <div className="absolute inset-0 bg-black/40 flex items-end">
 
                     <div className="p-6">
@@ -502,145 +621,68 @@ function Dashboard() {
 
                 </div>
 
-                {/* CONTENT */}
-
                 <div className="p-6">
 
-                  {editingCommunityID ===
-                  community.communityID ? (
+                  <p className="text-slate-300 mb-5">
+                    {community.description}
+                  </p>
 
-                    <div className="space-y-4">
+                  {user &&
+                    parseInt(
+                      user.UserID
+                    ) ===
+                      community.ownerID ? (
 
-                      <input
-                        type="text"
-                        value={editName}
-                        onChange={(e) =>
-                          setEditName(
-                            e.target.value
-                          )
-                        }
-                        className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
-                      />
-
-                      <textarea
-                        value={
-                          editDescription
-                        }
-                        onChange={(e) =>
-                          setEditDescription(
-                            e.target.value
-                          )
-                        }
-                        className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
-                      />
-
-                      <input
-                        type="file"
-                        onChange={(e) =>
-                          setEditBanner(
-                            e.target.files[0]
-                          )
-                        }
-                        className="text-white"
-                      />
+                    <div className="flex gap-3">
 
                       <button
                         onClick={(e) => {
 
                           e.stopPropagation();
 
-                          updateCommunity(
-                            community.communityID
+                          startEdit(
+                            community
                           );
 
                         }}
                         className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded-xl transition-all"
                       >
-                        Save
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+
+                          e.stopPropagation();
+
+                          deleteCommunity(
+                            community.communityID
+                          );
+
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-xl transition-all"
+                      >
+                        Delete
                       </button>
 
                     </div>
 
                   ) : (
 
-                    <>
+                    <button
+                      onClick={(e) => {
 
-                      <p className="text-slate-300 mb-5">
-                        {
-                          community.description
-                        }
-                      </p>
+                        e.stopPropagation();
 
-                      {/* OWNER */}
+                        joinCommunity(
+                          community.communityID
+                        );
 
-                      {user &&
-                        parseInt(
-                          user.UserID
-                        ) ===
-                          community.ownerID && (
-
-                        <div className="flex gap-3">
-
-                          <button
-                            onClick={(e) => {
-
-                              e.stopPropagation();
-
-                              startEdit(
-                                community
-                              );
-
-                            }}
-                            className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded-xl transition-all"
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-
-                              e.stopPropagation();
-
-                              deleteCommunity(
-                                community.communityID
-                              );
-
-                            }}
-                            className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-xl transition-all"
-                          >
-                            Delete
-                          </button>
-
-                        </div>
-
-                      )}
-
-                      {/* JOIN */}
-
-                      {(!user ||
-                        parseInt(
-                          user.UserID
-                        ) !==
-                          community.ownerID) && (
-
-                        <button
-                          onClick={(e) => {
-
-                            e.stopPropagation();
-
-                            joinCommunity(
-                              community.communityID
-                            );
-
-                          }}
-                          className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl transition-all"
-                        >
-                          Join Community
-                        </button>
-
-                      )}
-
-                    </>
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl transition-all"
+                    >
+                      Join Community
+                    </button>
 
                   )}
 

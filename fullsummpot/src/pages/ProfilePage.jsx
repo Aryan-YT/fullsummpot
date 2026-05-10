@@ -332,6 +332,11 @@ function ProfilePage() {
           bio
         );
 
+        formData.append(
+          "userID",
+          currentUser.UserID
+        );
+
         if (profileImage) {
 
           formData.append(
@@ -412,81 +417,94 @@ function ProfilePage() {
 
             <div className="flex-1 w-full">
 
-              <input
-                type="text"
-                value={username}
-                onChange={(e) =>
-                  setUsername(
-                    e.target.value
-                  )
-                }
-                className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-4 text-2xl font-bold"
-              />
-
-              <textarea
-                placeholder="Write your bio..."
-                value={bio}
-                onChange={(e) =>
-                  setBio(
-                    e.target.value
-                  )
-                }
-                className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-4"
-              />
-
-              <input
-                type="file"
-                onChange={(e) =>
-                  setProfileImage(
-                    e.target.files[0]
-                  )
-                }
-                className="text-white mb-4"
-              />
-
-              {/* ONLY OWN PROFILE */}
+              {/* OWN PROFILE */}
 
               {currentUser &&
-                parseInt(
-                  currentUser.UserID
-                ) ===
-                  parseInt(id) && (
+                parseInt(currentUser.UserID)
+                === parseInt(id) ? (
 
-                <button
-                  onClick={
-                    updateProfile
-                  }
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all"
-                >
-                  Save Profile
-                </button>
+                <>
 
-              )}
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) =>
+                      setUsername(
+                        e.target.value
+                      )
+                    }
+                    className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-4 text-2xl font-bold"
+                  />
 
-              {/* FOLLOW BUTTON */}
+                  <textarea
+                    placeholder="Write your bio..."
+                    value={bio}
+                    onChange={(e) =>
+                      setBio(
+                        e.target.value
+                      )
+                    }
+                    className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-4"
+                  />
 
-              {currentUser &&
-                parseInt(
-                  currentUser.UserID
-                ) !==
-                  parseInt(id) && (
+                  <input
+                    type="file"
+                    onChange={(e) =>
+                      setProfileImage(
+                        e.target.files[0]
+                      )
+                    }
+                    className="text-white mb-4"
+                  />
 
-                <button
-                  onClick={
-                    followUser
-                  }
-                  className={`mt-4 px-6 py-3 rounded-xl transition-all text-white ${
-                    isFollowing
-                      ? "bg-red-500 hover:bg-red-600"
-                      : "bg-green-600 hover:bg-green-700"
-                  }`}
-                >
+                  <button
+                    onClick={updateProfile}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all"
+                  >
+                    Save Profile
+                  </button>
 
-                  {isFollowing
-                    ? "Unfollow"
-                    : "Follow"}
+                </>
 
-                </button>
+              ) : (
+
+                /* WATCHER VIEW */
+
+                <>
+
+                  <h1 className="text-5xl font-bold text-white mb-4">
+                    {user?.username}
+                  </h1>
+
+                  {user?.bio && (
+
+                    <p className="text-slate-300 text-xl mb-6">
+                      {user.bio}
+                    </p>
+
+                  )}
+
+                  {/* FOLLOW BUTTON */}
+
+                  {currentUser && (
+
+                    <button
+                      onClick={followUser}
+                      className={`px-6 py-3 rounded-xl transition-all text-white ${isFollowing
+                        ? "bg-red-500 hover:bg-red-600"
+                        : "bg-green-600 hover:bg-green-700"
+                        }`}
+                    >
+
+                      {isFollowing
+                        ? "Unfollow"
+                        : "Follow"}
+
+                    </button>
+
+                  )}
+
+                </>
 
               )}
 

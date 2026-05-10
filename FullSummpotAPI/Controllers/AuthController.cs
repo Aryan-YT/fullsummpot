@@ -219,6 +219,22 @@ namespace FullSummpotAPI.Controllers
                     message = "User not found"
                 });
             }
+            // SECURITY CHECK
+
+            var currentUserID =
+                Request.Form["userID"];
+
+            if (currentUserID !=
+                user.UserID.ToString())
+            {
+                return Unauthorized(
+                    new
+                    {
+                        message =
+                            "You can only edit your own profile"
+                    }
+                );
+            }
 
             user.Username = username;
 
@@ -481,5 +497,39 @@ namespace FullSummpotAPI.Controllers
 
             return Ok(following);
         }
+
+        // SEARCH USERS
+
+        [HttpGet("search")]
+
+        public IActionResult SearchUsers(
+            string username
+        )
+        {
+            var users =
+                _context.Users
+
+                    .Where(u =>
+                        u.Username
+                            .ToLower()
+                            .Contains(
+                                username.ToLower()
+                            )
+                    )
+
+                    .Select(u => new
+                    {
+                        u.UserID,
+
+                        u.Username,
+
+                        u.ProfileImageUrl
+                    })
+
+                    .ToList();
+
+            return Ok(users);
+        }
     }
+
 }
