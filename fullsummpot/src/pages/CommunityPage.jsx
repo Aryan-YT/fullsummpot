@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
 import API from "../services/api";
@@ -9,6 +9,8 @@ function CommunityPage() {
 
   const { id } = useParams();
 
+  const navigate = useNavigate();
+
   const user = getUserData();
 
   const [posts, setPosts] = useState([]);
@@ -16,6 +18,7 @@ function CommunityPage() {
   const [community, setCommunity] = useState(null);
 
   const [title, setTitle] = useState("");
+
   const [content, setContent] = useState("");
 
   const [image, setImage] = useState(null);
@@ -155,6 +158,7 @@ function CommunityPage() {
       await API.post("/Posts/like", {
 
         userID: parseInt(user.UserID),
+
         postID: postID
 
       });
@@ -202,7 +206,9 @@ function CommunityPage() {
       await API.post("/Posts/comment", {
 
         content: commentInputs[postID],
+
         userID: parseInt(user.UserID),
+
         postID: postID
 
       });
@@ -414,6 +420,49 @@ function CommunityPage() {
               className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-6 shadow-2xl"
             >
 
+              {/* PROFILE */}
+
+              <div className="flex items-center gap-3 mb-5">
+
+                {post.profileImageUrl ? (
+
+                  <img
+                    src={post.profileImageUrl}
+                    alt="Profile"
+                    className="w-12 h-12 rounded-full object-cover border border-slate-600 cursor-pointer"
+                    onClick={() =>
+                      navigate(`/profile/${post.userID}`)
+                    }
+                  />
+
+                ) : (
+
+                  <div
+                    onClick={() =>
+                      navigate(`/profile/${post.userID}`)
+                    }
+                    className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold cursor-pointer"
+                  >
+                    {post.username?.charAt(0)}
+                  </div>
+
+                )}
+
+                <div>
+
+                  <p
+                    onClick={() =>
+                      navigate(`/profile/${post.userID}`)
+                    }
+                    className="text-white font-bold cursor-pointer"
+                  >
+                    {post.username}
+                  </p>
+
+                </div>
+
+              </div>
+
               {/* TITLE */}
 
               {editingPostID === post.postID ? (
@@ -451,7 +500,7 @@ function CommunityPage() {
 
               )}
 
-              {/* POST IMAGE */}
+              {/* IMAGE */}
 
               {post.imageUrl && (
 
@@ -463,7 +512,7 @@ function CommunityPage() {
 
               )}
 
-              {/* EDIT + DELETE */}
+              {/* EDIT DELETE */}
 
               {isOwner && (
 
@@ -500,7 +549,7 @@ function CommunityPage() {
 
               )}
 
-              {/* LIKE BUTTON */}
+              {/* LIKE */}
 
               <button
                 onClick={() => likePost(post.postID)}

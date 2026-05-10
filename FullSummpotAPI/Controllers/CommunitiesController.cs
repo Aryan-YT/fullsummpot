@@ -95,5 +95,25 @@ namespace FullSummpotAPI.Controllers
                 message = "Joined Community!"
             });
         }
+
+        // GET JOINED COMMUNITIES OF USER
+
+        [HttpGet("joined/{userID}")]
+
+        public IActionResult GetJoinedCommunities(int userID)
+        {
+            var joinedCommunities = _context.CommunityMembers
+                .Where(cm => cm.UserID == userID)
+                .Join(
+                    _context.Communities,
+                    cm => cm.CommunityID,
+                    c => c.CommunityID,
+                    (cm, c) => c
+                )
+                .ToList();
+
+            return Ok(joinedCommunities);
+        }
+
     }
 }

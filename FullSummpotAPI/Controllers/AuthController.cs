@@ -16,14 +16,19 @@ namespace FullSummpotAPI.Controllers
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
-        public AuthController(AppDbContext context, IConfiguration configuration)
+        public AuthController(
+            AppDbContext context,
+            IConfiguration configuration
+        )
         {
             _context = context;
             _configuration = configuration;
         }
 
         // REGISTER
+
         [HttpPost("register")]
+
         public IActionResult Register(User user)
         {
             var existingUser = _context.Users
@@ -38,9 +43,14 @@ namespace FullSummpotAPI.Controllers
             }
 
             // HASH PASSWORD
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
+
+            user.PasswordHash =
+                BCrypt.Net.BCrypt.HashPassword(
+                    user.PasswordHash
+                );
 
             _context.Users.Add(user);
+
             _context.SaveChanges();
 
             return Ok(new
@@ -50,7 +60,9 @@ namespace FullSummpotAPI.Controllers
         }
 
         // LOGIN
+
         [HttpPost("login")]
+
         public IActionResult Login(LoginModel model)
         {
             var user = _context.Users
@@ -64,10 +76,11 @@ namespace FullSummpotAPI.Controllers
                 });
             }
 
-            bool validPassword = BCrypt.Net.BCrypt.Verify(
-                model.Password,
-                user.PasswordHash
-            );
+            bool validPassword =
+                BCrypt.Net.BCrypt.Verify(
+                    model.Password,
+                    user.PasswordHash
+                );
 
             if (!validPassword)
             {
@@ -78,50 +91,183 @@ namespace FullSummpotAPI.Controllers
             }
 
             // JWT TOKEN
+
             var claims = new[]
             {
-                new Claim("UserID", user.UserID.ToString()),
-                new Claim("Username", user.Username),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(
+                    "UserID",
+                    user.UserID.ToString()
+                ),
+
+                new Claim(
+                    "Username",
+                    user.Username
+                ),
+
+                new Claim(
+                    ClaimTypes.Name,
+                    user.Username
+                ),
+
+                new Claim(
+                    ClaimTypes.Email,
+                    user.Email
+                ),
+
+                new Claim(
+                    ClaimTypes.Role,
+                    user.Role
+                )
             };
 
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(
-                    _configuration["Jwt:Key"]!
-                )
-            );
+            var key =
+                new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(
+                        _configuration["Jwt:Key"]!
+                    )
+                );
 
-            var creds = new SigningCredentials(
-                key,
-                SecurityAlgorithms.HmacSha256
-            );
+            var creds =
+                new SigningCredentials(
+                    key,
+                    SecurityAlgorithms.HmacSha256
+                );
 
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddDays(1),
-                signingCredentials: creds
-            );
+            var token =
+                new JwtSecurityToken(
+                    issuer:
+                        _configuration["Jwt:Issuer"],
 
-            var jwt = new JwtSecurityTokenHandler()
-                .WriteToken(token);
+                    audience:
+                        _configuration["Jwt:Audience"],
+
+                    claims: claims,
+
+                    expires:
+                        DateTime.Now.AddDays(1),
+
+                    signingCredentials: creds
+                );
+
+            var jwt =
+                new JwtSecurityTokenHandler()
+                    .WriteToken(token);
 
             return Ok(new
             {
                 token = jwt,
-                username = user.Username,
-                role = user.Role
+
+                user = new
+                {
+                    user.UserID,
+                    user.Username,
+                    user.Email,
+                    user.Role,
+                    user.Bio,
+                    user.ProfileImageUrl
+                }
             });
         }
 
-        // GET USERS
+        // GET ALL USERS
+
         [HttpGet("users")]
+
         public IActionResult GetUsers()
         {
             return Ok(_context.Users.ToList());
+        }
+
+        // GET SINGLE USER PROFILE
+
+        [HttpGet("profile/{id}")]
+
+        public IActionResult GetProfile(int id)
+        {
+            var user = _context.Users
+                .FirstOrDefault(u => u.UserID == id);
+
+            if (user == null)
+            {
+                return NotFound(new
+                {
+                    message = "User not found"
+                });
+            }
+
+            return Ok(user);
+        }
+
+        // UPDATE PROFILE
+
+        [HttpPut("profile/{id}")]
+
+        public async Task<IActionResult> UpdateProfile(
+            int id,
+            [FromForm] string username,
+            [FromForm] string bio,
+            IFormFile? profileImage
+        )
+        {
+            var user = _context.Users
+                .FirstOrDefault(u => u.UserID == id);
+
+            if (user == null)
+            {
+                return NotFound(new
+                {
+                    message = "User not found"
+                });
+            }
+
+            user.Username = username;
+
+            user.Bio = bio;
+
+            // IMAGE UPLOAD
+
+            if (profileImage != null)
+            {
+                var uploadsFolder = Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot/uploads"
+                );
+
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(
+                        uploadsFolder
+                    );
+                }
+
+                var fileName =
+                    Guid.NewGuid().ToString() +
+                    Path.GetExtension(
+                        profileImage.FileName
+                    );
+
+                var filePath = Path.Combine(
+                    uploadsFolder,
+                    fileName
+                );
+
+                using (var stream =
+                    new FileStream(
+                        filePath,
+                        FileMode.Create
+                    ))
+                {
+                    await profileImage
+                        .CopyToAsync(stream);
+                }
+
+                user.ProfileImageUrl =
+                    $"http://localhost:5242/uploads/{fileName}";
+            }
+
+            _context.SaveChanges();
+
+            return Ok(user);
         }
     }
 }

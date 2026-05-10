@@ -116,6 +116,8 @@ namespace FullSummpotAPI.Controllers
 
         // GET POSTS BY COMMUNITY
 
+        // GET POSTS BY COMMUNITY
+
         [HttpGet("community/{communityID}")]
 
         public IActionResult GetCommunityPosts(int communityID)
@@ -123,6 +125,26 @@ namespace FullSummpotAPI.Controllers
             var posts = _context.Posts
                 .Where(p => p.CommunityID == communityID)
                 .OrderByDescending(p => p.CreatedAt)
+                .Select(p => new
+                {
+                    p.PostID,
+                    p.Title,
+                    p.Content,
+                    p.ImageUrl,
+                    p.UserID,
+                    p.CommunityID,
+                    p.CreatedAt,
+
+                    Username = _context.Users
+                        .Where(u => u.UserID == p.UserID)
+                        .Select(u => u.Username)
+                        .FirstOrDefault(),
+
+                    ProfileImageUrl = _context.Users
+                        .Where(u => u.UserID == p.UserID)
+                        .Select(u => u.ProfileImageUrl)
+                        .FirstOrDefault()
+                })
                 .ToList();
 
             return Ok(posts);
