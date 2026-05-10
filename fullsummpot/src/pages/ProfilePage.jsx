@@ -12,15 +12,20 @@ function ProfilePage() {
 
   const [posts, setPosts] = useState([]);
 
-  const [createdCommunities, setCreatedCommunities] = useState([]);
+  const [createdCommunities, setCreatedCommunities]
+    = useState([]);
 
-  const [joinedCommunities, setJoinedCommunities] = useState([]);
+  const [joinedCommunities, setJoinedCommunities]
+    = useState([]);
 
-  const [username, setUsername] = useState("");
+  const [username, setUsername]
+    = useState("");
 
-  const [bio, setBio] = useState("");
+  const [bio, setBio]
+    = useState("");
 
-  const [profileImage, setProfileImage] = useState(null);
+  const [profileImage, setProfileImage]
+    = useState(null);
 
   useEffect(() => {
 
@@ -62,11 +67,15 @@ function ProfilePage() {
 
     try {
 
-      const response = await API.get("/Posts");
+      const response =
+        await API.get("/Posts");
 
-      const userPosts = response.data.filter(
-        (post) => post.userID === parseInt(id)
-      );
+      const userPosts =
+        response.data.filter(
+          (post) =>
+            post.userID ===
+            parseInt(id)
+        );
 
       setPosts(userPosts);
 
@@ -84,26 +93,33 @@ function ProfilePage() {
 
     try {
 
-      const response = await API.get("/Communities");
+      const response =
+        await API.get("/Communities");
 
-      const allCommunities = response.data;
+      const allCommunities =
+        response.data;
 
       // CREATED
 
-      const created = allCommunities.filter(
-        (community) =>
-          community.ownerID === parseInt(id)
-      );
+      const created =
+        allCommunities.filter(
+          (community) =>
+            community.ownerID ===
+            parseInt(id)
+        );
 
       setCreatedCommunities(created);
 
       // JOINED
 
-      const joinedResponse = await API.get(
-        `/Communities/joined/${id}`
-      );
+      const joinedResponse =
+        await API.get(
+          `/Communities/joined/${id}`
+        );
 
-      setJoinedCommunities(joinedResponse.data);
+      setJoinedCommunities(
+        joinedResponse.data
+      );
 
     } catch (error) {
 
@@ -121,9 +137,15 @@ function ProfilePage() {
 
       const formData = new FormData();
 
-      formData.append("username", username);
+      formData.append(
+        "username",
+        username
+      );
 
-      formData.append("bio", bio);
+      formData.append(
+        "bio",
+        bio
+      );
 
       if (profileImage) {
 
@@ -139,10 +161,8 @@ function ProfilePage() {
         formData,
         {
           headers: {
-
             "Content-Type":
               "multipart/form-data"
-
           }
         }
       );
@@ -165,7 +185,7 @@ function ProfilePage() {
 
       <Navbar />
 
-      <div className="max-w-5xl mx-auto p-8">
+      <div className="max-w-6xl mx-auto p-8">
 
         {/* PROFILE CARD */}
 
@@ -188,7 +208,9 @@ function ProfilePage() {
               ) : (
 
                 <div className="w-40 h-40 rounded-full bg-slate-700 flex items-center justify-center text-white text-5xl font-bold">
+
                   {user?.username?.charAt(0)}
+
                 </div>
 
               )}
@@ -203,7 +225,9 @@ function ProfilePage() {
                 type="text"
                 value={username}
                 onChange={(e) =>
-                  setUsername(e.target.value)
+                  setUsername(
+                    e.target.value
+                  )
                 }
                 className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-4 text-2xl font-bold"
               />
@@ -212,7 +236,9 @@ function ProfilePage() {
                 placeholder="Write your bio..."
                 value={bio}
                 onChange={(e) =>
-                  setBio(e.target.value)
+                  setBio(
+                    e.target.value
+                  )
                 }
                 className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-4"
               />
@@ -290,22 +316,95 @@ function ProfilePage() {
             Communities Created
           </h2>
 
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid md:grid-cols-2 gap-6">
 
             {createdCommunities.map((community) => (
 
               <div
                 key={community.communityID}
-                className="bg-white/10 p-5 rounded-2xl border border-white/10"
+                onClick={() =>
+                  window.location.href =
+                  `/community/${community.communityID}`
+                }
+                className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
               >
 
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {community.name}
-                </h3>
+                {/* BANNER */}
 
-                <p className="text-slate-300">
-                  {community.description}
-                </p>
+                <div className="h-44">
+
+                  {community.bannerUrl ? (
+
+                    <img
+                      src={community.bannerUrl}
+                      alt="Banner"
+                      className="w-full h-full object-cover"
+                    />
+
+                  ) : (
+
+                    <div className="w-full h-full bg-slate-800" />
+
+                  )}
+
+                </div>
+
+                {/* CONTENT */}
+
+                <div className="p-6">
+
+                  <h3 className="text-3xl font-bold text-white mb-3">
+                    {community.name}
+                  </h3>
+
+                  <p className="text-slate-300 mb-5">
+                    {community.description}
+                  </p>
+
+                  <div className="flex gap-3">
+
+                    <button
+                      onClick={(e) => {
+
+                        e.stopPropagation();
+
+                        window.location.href =
+                          `/community/${community.communityID}`;
+
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl transition-all"
+                    >
+                      Open
+                    </button>
+
+                    <button
+                      onClick={async (e) => {
+
+                        e.stopPropagation();
+
+                        try {
+
+                          await API.delete(
+                            `/Communities/${community.communityID}`
+                          );
+
+                          fetchCommunities();
+
+                        } catch (error) {
+
+                          console.log(error);
+
+                        }
+
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-xl transition-all"
+                    >
+                      Delete
+                    </button>
+
+                  </div>
+
+                </div>
 
               </div>
 
@@ -323,22 +422,52 @@ function ProfilePage() {
             Communities Joined
           </h2>
 
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid md:grid-cols-2 gap-6">
 
             {joinedCommunities.map((community) => (
 
               <div
                 key={community.communityID}
-                className="bg-white/10 p-5 rounded-2xl border border-white/10"
+                onClick={() =>
+                  window.location.href =
+                  `/community/${community.communityID}`
+                }
+                className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
               >
 
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {community.name}
-                </h3>
+                {/* BANNER */}
 
-                <p className="text-slate-300">
-                  {community.description}
-                </p>
+                <div className="h-44">
+
+                  {community.bannerUrl ? (
+
+                    <img
+                      src={community.bannerUrl}
+                      alt="Banner"
+                      className="w-full h-full object-cover"
+                    />
+
+                  ) : (
+
+                    <div className="w-full h-full bg-slate-800" />
+
+                  )}
+
+                </div>
+
+                {/* CONTENT */}
+
+                <div className="p-6">
+
+                  <h3 className="text-3xl font-bold text-white mb-3">
+                    {community.name}
+                  </h3>
+
+                  <p className="text-slate-300">
+                    {community.description}
+                  </p>
+
+                </div>
 
               </div>
 

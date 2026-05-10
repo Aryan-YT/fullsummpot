@@ -347,17 +347,107 @@ function CommunityPage() {
 
         {/* COMMUNITY INFO */}
 
+        {/* COMMUNITY HERO */}
+
         {community && (
 
-          <div className="mb-10">
+          <div className="relative mb-12 rounded-[35px] overflow-hidden border border-white/10 shadow-2xl">
 
-            <h1 className="text-5xl font-bold text-white mb-3">
-              {community.name}
-            </h1>
+            {/* BANNER */}
 
-            <p className="text-slate-400 text-lg">
-              {community.description}
-            </p>
+            <div className="h-[350px] relative">
+
+              {community.bannerUrl ? (
+
+                <img
+                  src={community.bannerUrl}
+                  alt="Banner"
+                  className="w-full h-full object-cover"
+                />
+
+              ) : (
+
+                <div className="w-full h-full bg-slate-800" />
+
+              )}
+
+              {/* OVERLAY */}
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+
+              {/* CONTENT */}
+
+              <div className="absolute bottom-0 left-0 w-full p-10">
+
+                <div className="flex items-center gap-4 mb-4">
+
+                  <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-lg border border-white/20 flex items-center justify-center text-white text-4xl font-bold">
+
+                    {community.name?.charAt(0)}
+
+                  </div>
+
+                  <div>
+
+                    <h1 className="text-6xl font-black text-white mb-2 tracking-tight">
+
+                      {community.name}
+
+                    </h1>
+
+                    <p className="text-slate-300 text-lg">
+
+                      {community.description}
+
+                    </p>
+
+                  </div>
+
+                </div>
+
+                {/* STATS */}
+
+                <div className="flex gap-4 mt-6 flex-wrap">
+
+                  <div className="bg-white/10 backdrop-blur-lg px-5 py-3 rounded-2xl border border-white/10">
+
+                    <p className="text-slate-300 text-sm">
+                      Posts
+                    </p>
+
+                    <h2 className="text-white text-2xl font-bold">
+                      {posts.length}
+                    </h2>
+
+                  </div>
+
+                  <div className="bg-white/10 backdrop-blur-lg px-5 py-3 rounded-2xl border border-white/10">
+
+                    <p className="text-slate-300 text-sm">
+                      Community ID
+                    </p>
+
+                    <h2 className="text-white text-2xl font-bold">
+                      #{community.communityID}
+                    </h2>
+
+                  </div>
+
+                  {isOwner && (
+
+                    <div className="bg-yellow-500 text-black px-5 py-3 rounded-2xl font-bold flex items-center">
+
+                      👑 You Own This Community
+
+                    </div>
+
+                  )}
+
+                </div>
+
+              </div>
+
+            </div>
 
           </div>
 

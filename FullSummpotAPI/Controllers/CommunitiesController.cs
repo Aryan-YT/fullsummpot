@@ -20,8 +20,63 @@ namespace FullSummpotAPI.Controllers
 
         [HttpPost]
 
-        public IActionResult CreateCommunity(Community community)
+        public async Task<IActionResult> CreateCommunity(
+            [FromForm] string name,
+            [FromForm] string description,
+            [FromForm] int ownerID,
+            IFormFile? banner
+        )
         {
+            string? bannerUrl = null;
+
+            // BANNER UPLOAD
+
+            if (banner != null)
+            {
+                var uploadsFolder = Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot/uploads"
+                );
+
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(
+                        uploadsFolder
+                    );
+                }
+
+                var fileName =
+                    Guid.NewGuid().ToString() +
+                    Path.GetExtension(
+                        banner.FileName
+                    );
+
+                var filePath = Path.Combine(
+                    uploadsFolder,
+                    fileName
+                );
+
+                using (var stream =
+                    new FileStream(
+                        filePath,
+                        FileMode.Create
+                    ))
+                {
+                    await banner.CopyToAsync(stream);
+                }
+
+                bannerUrl =
+                    $"http://localhost:5242/uploads/{fileName}";
+            }
+
+            var community = new Community
+            {
+                Name = name,
+                Description = description,
+                OwnerID = ownerID,
+                BannerUrl = bannerUrl
+            };
+
             _context.Communities.Add(community);
 
             _context.SaveChanges();
@@ -60,17 +115,113 @@ namespace FullSummpotAPI.Controllers
             return Ok(community);
         }
 
+        // UPDATE COMMUNITY
+
+        [HttpPut("{id}")]
+
+        public async Task<IActionResult> UpdateCommunity(
+            int id,
+            [FromForm] string name,
+            [FromForm] string description,
+            IFormFile? banner
+        )
+        {
+            var community = _context.Communities
+                .FirstOrDefault(c => c.CommunityID == id);
+
+            if (community == null)
+            {
+                return NotFound();
+            }
+
+            community.Name = name;
+
+            community.Description = description;
+
+            // NEW BANNER
+
+            if (banner != null)
+            {
+                var uploadsFolder = Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot/uploads"
+                );
+
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(
+                        uploadsFolder
+                    );
+                }
+
+                var fileName =
+                    Guid.NewGuid().ToString() +
+                    Path.GetExtension(
+                        banner.FileName
+                    );
+
+                var filePath = Path.Combine(
+                    uploadsFolder,
+                    fileName
+                );
+
+                using (var stream =
+                    new FileStream(
+                        filePath,
+                        FileMode.Create
+                    ))
+                {
+                    await banner.CopyToAsync(stream);
+                }
+
+                community.BannerUrl =
+                    $"http://localhost:5242/uploads/{fileName}";
+            }
+
+            _context.SaveChanges();
+
+            return Ok(community);
+        }
+
+        // DELETE COMMUNITY
+
+        [HttpDelete("{id}")]
+
+        public IActionResult DeleteCommunity(int id)
+        {
+            var community = _context.Communities
+                .FirstOrDefault(c => c.CommunityID == id);
+
+            if (community == null)
+            {
+                return NotFound();
+            }
+
+            _context.Communities.Remove(community);
+
+            _context.SaveChanges();
+
+            return Ok(new
+            {
+                message = "Community Deleted"
+            });
+        }
+
         // JOIN COMMUNITY
 
         [HttpPost("join")]
 
-        public IActionResult JoinCommunity(JoinCommunityModel model)
+        public IActionResult JoinCommunity(
+            JoinCommunityModel model
+        )
         {
-            var alreadyJoined = _context.CommunityMembers
-                .FirstOrDefault(m =>
-                    m.UserID == model.UserID &&
-                    m.CommunityID == model.CommunityID
-                );
+            var alreadyJoined =
+                _context.CommunityMembers
+                    .FirstOrDefault(m =>
+                        m.UserID == model.UserID &&
+                        m.CommunityID ==
+                        model.CommunityID
+                    );
 
             if (alreadyJoined != null)
             {
@@ -96,24 +247,28 @@ namespace FullSummpotAPI.Controllers
             });
         }
 
-        // GET JOINED COMMUNITIES OF USER
+        // GET JOINED COMMUNITIES
 
         [HttpGet("joined/{userID}")]
 
-        public IActionResult GetJoinedCommunities(int userID)
+        public IActionResult GetJoinedCommunities(
+            int userID
+        )
         {
-            var joinedCommunities = _context.CommunityMembers
-                .Where(cm => cm.UserID == userID)
-                .Join(
-                    _context.Communities,
-                    cm => cm.CommunityID,
-                    c => c.CommunityID,
-                    (cm, c) => c
-                )
-                .ToList();
+            var joinedCommunities =
+                _context.CommunityMembers
+                    .Where(cm =>
+                        cm.UserID == userID
+                    )
+                    .Join(
+                        _context.Communities,
+                        cm => cm.CommunityID,
+                        c => c.CommunityID,
+                        (cm, c) => c
+                    )
+                    .ToList();
 
             return Ok(joinedCommunities);
         }
-
     }
 }
