@@ -21,5 +21,7 @@ namespace FullSummpotAPI.Data
         public DbSet<PostLike> PostLikes { get; set; }
 
         public DbSet<Comment> Comments { get; set; }
+
+        public DbSet<UserFollow> UserFollows { get; set; }
     }
 }

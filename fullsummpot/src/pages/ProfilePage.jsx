@@ -3,19 +3,25 @@ import { useParams } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
 import API from "../services/api";
+import { getUserData } from "../utils/auth";
 
 function ProfilePage() {
 
   const { id } = useParams();
 
+  const currentUser =
+    getUserData();
+
   const [user, setUser] = useState(null);
 
   const [posts, setPosts] = useState([]);
 
-  const [createdCommunities, setCreatedCommunities]
+  const [createdCommunities,
+    setCreatedCommunities]
     = useState([]);
 
-  const [joinedCommunities, setJoinedCommunities]
+  const [joinedCommunities,
+    setJoinedCommunities]
     = useState([]);
 
   const [username, setUsername]
@@ -24,8 +30,39 @@ function ProfilePage() {
   const [bio, setBio]
     = useState("");
 
-  const [profileImage, setProfileImage]
+  const [profileImage,
+    setProfileImage]
     = useState(null);
+
+  // FOLLOW STATES
+
+  const [followersCount,
+    setFollowersCount]
+    = useState(0);
+
+  const [followingCount,
+    setFollowingCount]
+    = useState(0);
+
+  const [isFollowing,
+    setIsFollowing]
+    = useState(false);
+
+  const [followers,
+    setFollowers]
+    = useState([]);
+
+  const [following,
+    setFollowing]
+    = useState([]);
+
+  const [showFollowers,
+    setShowFollowers]
+    = useState(false);
+
+  const [showFollowing,
+    setShowFollowing]
+    = useState(false);
 
   useEffect(() => {
 
@@ -35,6 +72,12 @@ function ProfilePage() {
 
     fetchCommunities();
 
+    fetchFollowers();
+
+    fetchFollowing();
+
+    checkFollowing();
+
   }, [id]);
 
   // FETCH PROFILE
@@ -43,15 +86,20 @@ function ProfilePage() {
 
     try {
 
-      const response = await API.get(
-        `/Auth/profile/${id}`
-      );
+      const response =
+        await API.get(
+          `/Auth/profile/${id}`
+        );
 
       setUser(response.data);
 
-      setUsername(response.data.username);
+      setUsername(
+        response.data.username
+      );
 
-      setBio(response.data.bio || "");
+      setBio(
+        response.data.bio || ""
+      );
 
     } catch (error) {
 
@@ -89,95 +137,234 @@ function ProfilePage() {
 
   // FETCH COMMUNITIES
 
-  const fetchCommunities = async () => {
+  const fetchCommunities =
+    async () => {
 
-    try {
+      try {
 
-      const response =
-        await API.get("/Communities");
+        const response =
+          await API.get(
+            "/Communities"
+          );
 
-      const allCommunities =
-        response.data;
+        const allCommunities =
+          response.data;
 
-      // CREATED
+        // CREATED
 
-      const created =
-        allCommunities.filter(
-          (community) =>
-            community.ownerID ===
-            parseInt(id)
+        const created =
+          allCommunities.filter(
+            (community) =>
+              community.ownerID ===
+              parseInt(id)
+          );
+
+        setCreatedCommunities(
+          created
         );
 
-      setCreatedCommunities(created);
+        // JOINED
 
-      // JOINED
+        const joinedResponse =
+          await API.get(
+            `/Communities/joined/${id}`
+          );
 
-      const joinedResponse =
-        await API.get(
-          `/Communities/joined/${id}`
+        setJoinedCommunities(
+          joinedResponse.data
         );
 
-      setJoinedCommunities(
-        joinedResponse.data
-      );
+      } catch (error) {
 
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-  };
-
-  // UPDATE PROFILE
-
-  const updateProfile = async () => {
-
-    try {
-
-      const formData = new FormData();
-
-      formData.append(
-        "username",
-        username
-      );
-
-      formData.append(
-        "bio",
-        bio
-      );
-
-      if (profileImage) {
-
-        formData.append(
-          "profileImage",
-          profileImage
-        );
+        console.log(error);
 
       }
 
-      await API.put(
-        `/Auth/profile/${id}`,
-        formData,
-        {
-          headers: {
-            "Content-Type":
-              "multipart/form-data"
-          }
+    };
+
+  // FETCH FOLLOWERS
+
+  const fetchFollowers =
+    async () => {
+
+      try {
+
+        const response =
+          await API.get(
+            `/Auth/followers/${id}`
+          );
+
+        setFollowers(
+          response.data
+        );
+
+        setFollowersCount(
+          response.data.length
+        );
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    };
+
+  // FETCH FOLLOWING
+
+  const fetchFollowing =
+    async () => {
+
+      try {
+
+        const response =
+          await API.get(
+            `/Auth/following/${id}`
+          );
+
+        setFollowing(
+          response.data
+        );
+
+        setFollowingCount(
+          response.data.length
+        );
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    };
+
+  // CHECK FOLLOWING
+
+  const checkFollowing =
+    async () => {
+
+      if (!currentUser)
+        return;
+
+      try {
+
+        const response =
+          await API.get(
+            `/Auth/isfollowing?followerID=${currentUser.UserID}&followingID=${id}`
+          );
+
+        setIsFollowing(
+          response.data
+            .isFollowing
+        );
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    };
+
+  // FOLLOW USER
+
+  const followUser =
+    async () => {
+
+      if (!currentUser) {
+
+        alert(
+          "Please login first"
+        );
+
+        return;
+
+      }
+
+      try {
+
+        const response =
+          await API.post(
+            "/Auth/follow",
+            {
+              followerID:
+                parseInt(
+                  currentUser.UserID
+                ),
+
+              followingID:
+                parseInt(id)
+            }
+          );
+
+        setIsFollowing(
+          response.data
+            .following
+        );
+
+        fetchFollowers();
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    };
+
+  // UPDATE PROFILE
+
+  const updateProfile =
+    async () => {
+
+      try {
+
+        const formData =
+          new FormData();
+
+        formData.append(
+          "username",
+          username
+        );
+
+        formData.append(
+          "bio",
+          bio
+        );
+
+        if (profileImage) {
+
+          formData.append(
+            "profileImage",
+            profileImage
+          );
+
         }
-      );
 
-      fetchProfile();
+        await API.put(
+          `/Auth/profile/${id}`,
+          formData,
+          {
+            headers: {
+              "Content-Type":
+                "multipart/form-data"
+            }
+          }
+        );
 
-      alert("Profile Updated!");
+        fetchProfile();
 
-    } catch (error) {
+        alert(
+          "Profile Updated!"
+        );
 
-      console.log(error);
+      } catch (error) {
 
-    }
+        console.log(error);
 
-  };
+      }
+
+    };
 
   return (
 
@@ -200,7 +387,9 @@ function ProfilePage() {
               {user?.profileImageUrl ? (
 
                 <img
-                  src={user.profileImageUrl}
+                  src={
+                    user.profileImageUrl
+                  }
                   alt="Profile"
                   className="w-40 h-40 rounded-full object-cover border-4 border-blue-500"
                 />
@@ -209,7 +398,9 @@ function ProfilePage() {
 
                 <div className="w-40 h-40 rounded-full bg-slate-700 flex items-center justify-center text-white text-5xl font-bold">
 
-                  {user?.username?.charAt(0)}
+                  {user?.username?.charAt(
+                    0
+                  )}
 
                 </div>
 
@@ -253,12 +444,51 @@ function ProfilePage() {
                 className="text-white mb-4"
               />
 
-              <button
-                onClick={updateProfile}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all"
-              >
-                Save Profile
-              </button>
+              {/* ONLY OWN PROFILE */}
+
+              {currentUser &&
+                parseInt(
+                  currentUser.UserID
+                ) ===
+                  parseInt(id) && (
+
+                <button
+                  onClick={
+                    updateProfile
+                  }
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all"
+                >
+                  Save Profile
+                </button>
+
+              )}
+
+              {/* FOLLOW BUTTON */}
+
+              {currentUser &&
+                parseInt(
+                  currentUser.UserID
+                ) !==
+                  parseInt(id) && (
+
+                <button
+                  onClick={
+                    followUser
+                  }
+                  className={`mt-4 px-6 py-3 rounded-xl transition-all text-white ${
+                    isFollowing
+                      ? "bg-red-500 hover:bg-red-600"
+                      : "bg-green-600 hover:bg-green-700"
+                  }`}
+                >
+
+                  {isFollowing
+                    ? "Unfollow"
+                    : "Follow"}
+
+                </button>
+
+              )}
 
             </div>
 
@@ -268,7 +498,7 @@ function ProfilePage() {
 
         {/* STATS */}
 
-        <div className="grid md:grid-cols-3 gap-6 mb-10">
+        <div className="grid md:grid-cols-5 gap-6 mb-10">
 
           <div className="bg-white/10 p-6 rounded-3xl border border-white/10">
 
@@ -285,11 +515,13 @@ function ProfilePage() {
           <div className="bg-white/10 p-6 rounded-3xl border border-white/10">
 
             <h2 className="text-3xl font-bold text-white mb-2">
-              {createdCommunities.length}
+              {
+                createdCommunities.length
+              }
             </h2>
 
             <p className="text-slate-300">
-              Communities Created
+              Created
             </p>
 
           </div>
@@ -297,16 +529,138 @@ function ProfilePage() {
           <div className="bg-white/10 p-6 rounded-3xl border border-white/10">
 
             <h2 className="text-3xl font-bold text-white mb-2">
-              {joinedCommunities.length}
+              {
+                joinedCommunities.length
+              }
             </h2>
 
             <p className="text-slate-300">
-              Communities Joined
+              Joined
+            </p>
+
+          </div>
+
+          <div
+            onClick={() =>
+              setShowFollowers(
+                !showFollowers
+              )
+            }
+            className="bg-white/10 p-6 rounded-3xl border border-white/10 cursor-pointer hover:bg-white/20 transition-all"
+          >
+
+            <h2 className="text-3xl font-bold text-white mb-2">
+              {followersCount}
+            </h2>
+
+            <p className="text-slate-300">
+              Followers
+            </p>
+
+          </div>
+
+          <div
+            onClick={() =>
+              setShowFollowing(
+                !showFollowing
+              )
+            }
+            className="bg-white/10 p-6 rounded-3xl border border-white/10 cursor-pointer hover:bg-white/20 transition-all"
+          >
+
+            <h2 className="text-3xl font-bold text-white mb-2">
+              {followingCount}
+            </h2>
+
+            <p className="text-slate-300">
+              Following
             </p>
 
           </div>
 
         </div>
+
+        {/* FOLLOWERS */}
+
+        {showFollowers && (
+
+          <div className="bg-white/10 border border-white/10 rounded-3xl p-6 mb-10">
+
+            <h2 className="text-3xl font-bold text-white mb-5">
+              Followers
+            </h2>
+
+            <div className="space-y-4">
+
+              {followers.map(
+                (follower) => (
+
+                  <div
+                    key={
+                      follower.userID
+                    }
+                    onClick={() =>
+                      window.location.href =
+                      `/profile/${follower.userID}`
+                    }
+                    className="bg-slate-800 p-4 rounded-2xl cursor-pointer hover:bg-slate-700 transition-all"
+                  >
+
+                    <h3 className="text-white text-xl font-bold">
+                      {
+                        follower.username
+                      }
+                    </h3>
+
+                  </div>
+
+                )
+              )}
+
+            </div>
+
+          </div>
+
+        )}
+
+        {/* FOLLOWING */}
+
+        {showFollowing && (
+
+          <div className="bg-white/10 border border-white/10 rounded-3xl p-6 mb-10">
+
+            <h2 className="text-3xl font-bold text-white mb-5">
+              Following
+            </h2>
+
+            <div className="space-y-4">
+
+              {following.map(
+                (user) => (
+
+                  <div
+                    key={user.userID}
+                    onClick={() =>
+                      window.location.href =
+                      `/profile/${user.userID}`
+                    }
+                    className="bg-slate-800 p-4 rounded-2xl cursor-pointer hover:bg-slate-700 transition-all"
+                  >
+
+                    <h3 className="text-white text-xl font-bold">
+                      {user.username}
+                    </h3>
+
+                  </div>
+
+                )
+              )}
+
+            </div>
+
+          </div>
+
+        )}
 
         {/* CREATED COMMUNITIES */}
 
@@ -318,97 +672,58 @@ function ProfilePage() {
 
           <div className="grid md:grid-cols-2 gap-6">
 
-            {createdCommunities.map((community) => (
+            {createdCommunities.map(
+              (community) => (
 
-              <div
-                key={community.communityID}
-                onClick={() =>
-                  window.location.href =
-                  `/community/${community.communityID}`
-                }
-                className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
-              >
+                <div
+                  key={
+                    community.communityID
+                  }
+                  onClick={() =>
+                    window.location.href =
+                    `/community/${community.communityID}`
+                  }
+                  className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
+                >
 
-                {/* BANNER */}
+                  <div className="h-44">
 
-                <div className="h-44">
+                    {community.bannerUrl ? (
 
-                  {community.bannerUrl ? (
-
-                    <img
-                      src={community.bannerUrl}
-                      alt="Banner"
-                      className="w-full h-full object-cover"
-                    />
-
-                  ) : (
-
-                    <div className="w-full h-full bg-slate-800" />
-
-                  )}
-
-                </div>
-
-                {/* CONTENT */}
-
-                <div className="p-6">
-
-                  <h3 className="text-3xl font-bold text-white mb-3">
-                    {community.name}
-                  </h3>
-
-                  <p className="text-slate-300 mb-5">
-                    {community.description}
-                  </p>
-
-                  <div className="flex gap-3">
-
-                    <button
-                      onClick={(e) => {
-
-                        e.stopPropagation();
-
-                        window.location.href =
-                          `/community/${community.communityID}`;
-
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl transition-all"
-                    >
-                      Open
-                    </button>
-
-                    <button
-                      onClick={async (e) => {
-
-                        e.stopPropagation();
-
-                        try {
-
-                          await API.delete(
-                            `/Communities/${community.communityID}`
-                          );
-
-                          fetchCommunities();
-
-                        } catch (error) {
-
-                          console.log(error);
-
+                      <img
+                        src={
+                          community.bannerUrl
                         }
+                        alt="Banner"
+                        className="w-full h-full object-cover"
+                      />
 
-                      }}
-                      className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-xl transition-all"
-                    >
-                      Delete
-                    </button>
+                    ) : (
+
+                      <div className="w-full h-full bg-slate-800" />
+
+                    )}
+
+                  </div>
+
+                  <div className="p-6">
+
+                    <h3 className="text-3xl font-bold text-white mb-3">
+                      {community.name}
+                    </h3>
+
+                    <p className="text-slate-300 mb-5">
+                      {
+                        community.description
+                      }
+                    </p>
 
                   </div>
 
                 </div>
 
-              </div>
-
-            ))}
+              )
+            )}
 
           </div>
 
@@ -424,54 +739,58 @@ function ProfilePage() {
 
           <div className="grid md:grid-cols-2 gap-6">
 
-            {joinedCommunities.map((community) => (
+            {joinedCommunities.map(
+              (community) => (
 
-              <div
-                key={community.communityID}
-                onClick={() =>
-                  window.location.href =
-                  `/community/${community.communityID}`
-                }
-                className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
-              >
+                <div
+                  key={
+                    community.communityID
+                  }
+                  onClick={() =>
+                    window.location.href =
+                    `/community/${community.communityID}`
+                  }
+                  className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
+                >
 
-                {/* BANNER */}
+                  <div className="h-44">
 
-                <div className="h-44">
+                    {community.bannerUrl ? (
 
-                  {community.bannerUrl ? (
+                      <img
+                        src={
+                          community.bannerUrl
+                        }
+                        alt="Banner"
+                        className="w-full h-full object-cover"
+                      />
 
-                    <img
-                      src={community.bannerUrl}
-                      alt="Banner"
-                      className="w-full h-full object-cover"
-                    />
+                    ) : (
 
-                  ) : (
+                      <div className="w-full h-full bg-slate-800" />
 
-                    <div className="w-full h-full bg-slate-800" />
+                    )}
 
-                  )}
+                  </div>
+
+                  <div className="p-6">
+
+                    <h3 className="text-3xl font-bold text-white mb-3">
+                      {community.name}
+                    </h3>
+
+                    <p className="text-slate-300">
+                      {
+                        community.description
+                      }
+                    </p>
+
+                  </div>
 
                 </div>
 
-                {/* CONTENT */}
-
-                <div className="p-6">
-
-                  <h3 className="text-3xl font-bold text-white mb-3">
-                    {community.name}
-                  </h3>
-
-                  <p className="text-slate-300">
-                    {community.description}
-                  </p>
-
-                </div>
-
-              </div>
-
-            ))}
+              )
+            )}
 
           </div>
 

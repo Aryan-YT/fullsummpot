@@ -269,5 +269,217 @@ namespace FullSummpotAPI.Controllers
 
             return Ok(user);
         }
+
+        // FOLLOW / UNFOLLOW USER
+
+        [HttpPost("follow")]
+
+        public IActionResult FollowUser(
+            FollowUserModel model
+        )
+        {
+            // CANNOT FOLLOW SELF
+
+            if (model.FollowerID ==
+                model.FollowingID)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "Cannot follow yourself"
+                });
+            }
+
+            // CHECK EXISTING FOLLOW
+
+            var existingFollow =
+                _context.UserFollows
+                    .FirstOrDefault(f =>
+
+                        f.FollowerID ==
+                            model.FollowerID &&
+
+                        f.FollowingID ==
+                            model.FollowingID
+                    );
+
+            // UNFOLLOW
+
+            if (existingFollow != null)
+            {
+                _context.UserFollows
+                    .Remove(existingFollow);
+
+                _context.SaveChanges();
+
+                return Ok(new
+                {
+                    following = false,
+
+                    message =
+                        "User unfollowed"
+                });
+            }
+
+            // FOLLOW
+
+            var follow =
+                new UserFollow
+                {
+                    FollowerID =
+                        model.FollowerID,
+
+                    FollowingID =
+                        model.FollowingID
+                };
+
+            _context.UserFollows.Add(follow);
+
+            _context.SaveChanges();
+
+            return Ok(new
+            {
+                following = true,
+
+                message =
+                    "User followed"
+            });
+        }
+
+        // GET FOLLOWERS COUNT
+
+        [HttpGet("followers/count/{userID}")]
+
+        public IActionResult GetFollowersCount(
+            int userID
+        )
+        {
+            var count =
+                _context.UserFollows
+                    .Count(f =>
+                        f.FollowingID ==
+                            userID
+                    );
+
+            return Ok(new
+            {
+                count
+            });
+        }
+
+        // GET FOLLOWING COUNT
+
+        [HttpGet("following/count/{userID}")]
+
+        public IActionResult GetFollowingCount(
+            int userID
+        )
+        {
+            var count =
+                _context.UserFollows
+                    .Count(f =>
+                        f.FollowerID ==
+                            userID
+                    );
+
+            return Ok(new
+            {
+                count
+            });
+        }
+
+        // CHECK FOLLOWING STATUS
+
+        [HttpGet("isfollowing")]
+
+        public IActionResult IsFollowing(
+            int followerID,
+            int followingID
+        )
+        {
+            var isFollowing =
+                _context.UserFollows
+                    .Any(f =>
+
+                        f.FollowerID ==
+                            followerID &&
+
+                        f.FollowingID ==
+                            followingID
+                    );
+
+            return Ok(new
+            {
+                isFollowing
+            });
+        }
+
+        // GET FOLLOWERS LIST
+
+        [HttpGet("followers/{userID}")]
+
+        public IActionResult GetFollowers(
+            int userID
+        )
+        {
+            var followers =
+                _context.UserFollows
+
+                    .Where(f =>
+                        f.FollowingID ==
+                            userID
+                    )
+
+                    .Join(
+                        _context.Users,
+
+                        follow =>
+                            follow.FollowerID,
+
+                        user =>
+                            user.UserID,
+
+                        (follow, user) =>
+                            user
+                    )
+
+                    .ToList();
+
+            return Ok(followers);
+        }
+
+        // GET FOLLOWING LIST
+
+        [HttpGet("following/{userID}")]
+
+        public IActionResult GetFollowing(
+            int userID
+        )
+        {
+            var following =
+                _context.UserFollows
+
+                    .Where(f =>
+                        f.FollowerID ==
+                            userID
+                    )
+
+                    .Join(
+                        _context.Users,
+
+                        follow =>
+                            follow.FollowingID,
+
+                        user =>
+                            user.UserID,
+
+                        (follow, user) =>
+                            user
+                    )
+
+                    .ToList();
+
+            return Ok(following);
+        }
     }
 }
