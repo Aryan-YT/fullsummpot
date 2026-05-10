@@ -23,7 +23,8 @@ function Dashboard() {
   const [description, setDescription]
     = useState("");
 
-  const [banner, setBanner] = useState(null);
+  const [banner, setBanner]
+    = useState(null);
 
   const [editingCommunityID,
     setEditingCommunityID]
@@ -40,20 +41,25 @@ function Dashboard() {
     setEditBanner]
     = useState(null);
 
+  // GUEST MODE
+
   useEffect(() => {
-
-    const token =
-      localStorage.getItem("token");
-
-    if (!token) {
-
-      navigate("/");
-
-    }
 
     fetchCommunities();
 
-  }, [navigate]);
+  }, []);
+
+  // REQUIRE LOGIN
+
+  const requireLogin = () => {
+
+    alert(
+      "Please login or register first."
+    );
+
+    navigate("/login");
+
+  };
 
   // SEARCH FILTER
 
@@ -99,11 +105,22 @@ function Dashboard() {
 
   const createCommunity = async () => {
 
+    if (!user) {
+
+      requireLogin();
+
+      return;
+
+    }
+
     try {
 
       const formData = new FormData();
 
-      formData.append("name", name);
+      formData.append(
+        "name",
+        name
+      );
 
       formData.append(
         "description",
@@ -141,13 +158,11 @@ function Dashboard() {
       await API.post(
         "/Communities/join",
         {
-
           userID:
             parseInt(user.UserID),
 
           communityID:
             response.data.communityID
-
         }
       );
 
@@ -173,18 +188,24 @@ function Dashboard() {
     communityID
   ) => {
 
+    if (!user) {
+
+      requireLogin();
+
+      return;
+
+    }
+
     try {
 
       await API.post(
         "/Communities/join",
         {
-
           userID:
             parseInt(user.UserID),
 
           communityID:
             communityID
-
         }
       );
 
@@ -205,6 +226,14 @@ function Dashboard() {
   const deleteCommunity = async (
     communityID
   ) => {
+
+    if (!user) {
+
+      requireLogin();
+
+      return;
+
+    }
 
     try {
 
@@ -245,6 +274,14 @@ function Dashboard() {
   const updateCommunity = async (
     communityID
   ) => {
+
+    if (!user) {
+
+      requireLogin();
+
+      return;
+
+    }
 
     try {
 
@@ -536,10 +573,11 @@ function Dashboard() {
 
                       {/* OWNER */}
 
-                      {parseInt(
-                        user.UserID
-                      ) ===
-                        community.ownerID && (
+                      {user &&
+                        parseInt(
+                          user.UserID
+                        ) ===
+                          community.ownerID && (
 
                         <div className="flex gap-3">
 
@@ -579,10 +617,11 @@ function Dashboard() {
 
                       {/* JOIN */}
 
-                      {parseInt(
-                        user.UserID
-                      ) !==
-                        community.ownerID && (
+                      {(!user ||
+                        parseInt(
+                          user.UserID
+                        ) !==
+                          community.ownerID) && (
 
                         <button
                           onClick={(e) => {

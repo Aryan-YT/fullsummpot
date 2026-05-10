@@ -15,30 +15,49 @@ function App() {
 
       <Routes>
 
+        {/* HOME */}
+
         <Route
           path="/"
+          element={<Dashboard />}
+        />
+
+        {/* LOGIN */}
+
+        <Route
+          path="/login"
           element={<Login />}
         />
+
+        {/* REGISTER */}
 
         <Route
           path="/register"
           element={<Register />}
         />
 
+        {/* DASHBOARD */}
+
         <Route
           path="/dashboard"
           element={<Dashboard />}
         />
+
+        {/* FEED */}
 
         <Route
           path="/feed"
           element={<Feed />}
         />
 
+        {/* COMMUNITY PAGE */}
+
         <Route
           path="/community/:id"
           element={<CommunityPage />}
         />
+
+        {/* PROFILE PAGE */}
 
         <Route
           path="/profile/:id"

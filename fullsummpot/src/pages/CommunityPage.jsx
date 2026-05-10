@@ -38,6 +38,7 @@ function CommunityPage() {
   // OWNER CHECK
 
   const isOwner =
+    user &&
     community &&
     parseInt(user.UserID) === community.ownerID;
 
@@ -153,6 +154,14 @@ function CommunityPage() {
 
   const likePost = async (postID) => {
 
+    if (!user) {
+
+      requireLogin();
+
+      return;
+
+    }
+
     try {
 
       await API.post("/Posts/like", {
@@ -201,6 +210,14 @@ function CommunityPage() {
 
   const addComment = async (postID) => {
 
+    if (!user) {
+
+      requireLogin();
+
+      return;
+
+    }
+
     try {
 
       await API.post("/Posts/comment", {
@@ -233,7 +250,25 @@ function CommunityPage() {
 
   // CREATE POST
 
+  const requireLogin = () => {
+
+    alert(
+      "Please login or register first."
+    );
+
+    navigate("/login");
+
+  };
+
   const createPost = async () => {
+
+    if (!user) {
+
+      requireLogin();
+
+      return;
+
+    }
 
     try {
 
@@ -285,6 +320,14 @@ function CommunityPage() {
 
   const deletePost = async (postID) => {
 
+    if (!user) {
+
+      requireLogin();
+
+      return;
+
+    }
+
     try {
 
       await API.delete(`/Posts/${postID}`);
@@ -314,6 +357,14 @@ function CommunityPage() {
   // SAVE EDIT
 
   const saveEdit = async (postID) => {
+
+    if (!user) {
+
+      requireLogin();
+
+      return;
+
+    }
 
     try {
 
