@@ -48,23 +48,23 @@ export default function CommunityPage() {
 
   useEffect(() => { setLoading(true); Promise.all([fetchCommunity(), fetchPosts(), fetchLinks()]).then(() => setLoading(false)); }, [id]); // eslint-disable-line
 
-  const fetchCommunity = async () => { try { setCommunity((await API.get(user ? `/Communities/${id}?userID=${getUserId(user)}` : `/Communities/${id}`)).data); } catch {} };
-  const fetchPosts = async () => { try { const d = (await API.get(`/Posts/community/${id}`)).data; setPosts(d); d.forEach(p => { fetchLikes(p.postID); fetchComments(p.postID); }); } catch {} };
-  const fetchLinks = async () => { try { setLinks((await API.get(user ? `/Links/community/${id}?userID=${getUserId(user)}` : `/Links/community/${id}`)).data); } catch {} };
-  const fetchLikes = async (pid) => { try { const res = await API.get(`/Posts/${pid}/likes`); setLikes(p => ({ ...p, [pid]: res.data.count })); } catch {} };
-  const fetchComments = async (pid) => { try { const res = await API.get(`/Posts/${pid}/comments`); setComments(p => ({ ...p, [pid]: res.data })); } catch {} };
+  const fetchCommunity = async () => { try { setCommunity((await API.get(user ? `/Communities/${id}?userID=${getUserId(user)}` : `/Communities/${id}`)).data); } catch { } };
+  const fetchPosts = async () => { try { const d = (await API.get(`/Posts/community/${id}`)).data; setPosts(d); d.forEach(p => { fetchLikes(p.postID); fetchComments(p.postID); }); } catch { } };
+  const fetchLinks = async () => { try { setLinks((await API.get(user ? `/Links/community/${id}?userID=${getUserId(user)}` : `/Links/community/${id}`)).data); } catch { } };
+  const fetchLikes = async (pid) => { try { const res = await API.get(`/Posts/${pid}/likes`); setLikes(p => ({ ...p, [pid]: res.data.count })); } catch { } };
+  const fetchComments = async (pid) => { try { const res = await API.get(`/Posts/${pid}/comments`); setComments(p => ({ ...p, [pid]: res.data })); } catch { } };
 
-  const likePost = async (pid) => { if (!user) { navigate("/login"); return; } try { await API.post("/Posts/like", { userID: getUserId(user), postID: pid }); fetchLikes(pid); } catch {} };
-  const addComment = async (pid) => { if (!user) { navigate("/login"); return; } try { await API.post("/Posts/comment", { content: commentInputs[pid], userID: getUserId(user), postID: pid }); setCommentInputs(p => ({ ...p, [pid]: "" })); fetchComments(pid); } catch {} };
+  const likePost = async (pid) => { if (!user) { navigate("/login"); return; } try { await API.post("/Posts/like", { userID: getUserId(user), postID: pid }); fetchLikes(pid); } catch { } };
+  const addComment = async (pid) => { if (!user) { navigate("/login"); return; } try { await API.post("/Posts/comment", { content: commentInputs[pid], userID: getUserId(user), postID: pid }); setCommentInputs(p => ({ ...p, [pid]: "" })); fetchComments(pid); } catch { } };
   const createPost = async () => { if (!user) return; try { const fd = new FormData(); fd.append("title", title); fd.append("content", content); fd.append("userID", getUserId(user)); fd.append("communityID", parseInt(id)); if (image) fd.append("image", image); await API.post("/Posts", fd, { headers: { "Content-Type": "multipart/form-data" } }); setTitle(""); setContent(""); setImage(null); fetchPosts(); } catch { alert("Only community owner can post"); } };
-  const deletePost = async (pid) => { if (!window.confirm("Delete this post?")) return; try { await API.delete(`/Posts/${pid}`); fetchPosts(); } catch {} };
-  const savePostEdit = async (pid) => { try { await API.put(`/Posts/${pid}`, { title: editTitle, content: editContent }); setEditingPostID(null); fetchPosts(); } catch {} };
+  const deletePost = async (pid) => { if (!window.confirm("Delete this post?")) return; try { await API.delete(`/Posts/${pid}`); fetchPosts(); } catch { } };
+  const savePostEdit = async (pid) => { try { await API.put(`/Posts/${pid}`, { title: editTitle, content: editContent }); setEditingPostID(null); fetchPosts(); } catch { } };
 
-  const submitLink = async (e) => { e.preventDefault(); if (!user) { navigate("/login"); return; } setSubmittingLink(true); try { await API.post("/Links", { userID: getUserId(user), communityID: parseInt(id), title: linkTitle, url: linkUrl }); setLinkUrl(""); setLinkTitle(""); setShowSubmitLink(false); fetchLinks(); } catch {} finally { setSubmittingLink(false); } };
-  const clickLink = async (linkID, url) => { if (!user) { navigate("/login"); return; } try { await API.post("/Links/click", { linkID, clickedByUserID: getUserId(user) }); fetchLinks(); window.open(url, "_blank"); } catch {} };
-  const deleteLink = async (linkID) => { if (!window.confirm("Delete this link?")) return; try { await API.delete(`/Links/${linkID}`); fetchLinks(); } catch {} };
+  const submitLink = async (e) => { e.preventDefault(); if (!user) { navigate("/login"); return; } setSubmittingLink(true); try { await API.post("/Links", { userID: getUserId(user), communityID: parseInt(id), title: linkTitle, url: linkUrl }); setLinkUrl(""); setLinkTitle(""); setShowSubmitLink(false); fetchLinks(); } catch { } finally { setSubmittingLink(false); } };
+  const clickLink = async (linkID, url) => { if (!user) { navigate("/login"); return; } try { await API.post("/Links/click", { linkID, clickedByUserID: getUserId(user) }); fetchLinks(); window.open(url, "_blank"); } catch { } };
+  const deleteLink = async (linkID) => { if (!window.confirm("Delete this link?")) return; try { await API.delete(`/Links/${linkID}`); fetchLinks(); } catch { } };
 
-  const joinCommunity = async () => { if (!user) { navigate("/login"); return; } try { await API.post("/Communities/join", { userID: getUserId(user), communityID: parseInt(id) }); fetchCommunity(); } catch {} };
+  const joinCommunity = async () => { if (!user) { navigate("/login"); return; } try { await API.post("/Communities/join", { userID: getUserId(user), communityID: parseInt(id) }); fetchCommunity(); } catch { } };
   const leaveCommunity = async () => { try { await API.post("/Communities/leave", { userID: getUserId(user), communityID: parseInt(id) }); fetchCommunity(); } catch (e) { alert(e?.response?.data?.message || "Error"); } };
 
   const openEditCommunity = () => { setEditName(community.name); setEditDesc(community.description); setEditNiche(community.niche || ""); setEditBanner(null); setShowEditCommunity(true); };
@@ -75,11 +75,11 @@ export default function CommunityPage() {
       if (editBanner) fd.append("banner", editBanner);
       await API.put(`/Communities/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
       setShowEditCommunity(false); fetchCommunity();
-    } catch {} finally { setSaving(false); }
+    } catch { } finally { setSaving(false); }
   };
   const deleteCommunity = async () => {
     if (!window.confirm("Are you sure? This will permanently delete this community, all its posts, and links.")) return;
-    try { await API.delete(`/Communities/${id}`); navigate("/communities"); } catch {}
+    try { await API.delete(`/Communities/${id}`); navigate("/communities"); } catch { }
   };
 
   if (loading) return <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}><Navbar /><div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 0" }}><div className="spinner" /></div></div>;
@@ -109,18 +109,72 @@ export default function CommunityPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0, flexWrap: "wrap" }}>
               {community.isMember ? (
                 <>
-                  <button onClick={() => setShowSubmitLink(true)} className="btn btn-primary">➕ Submit Link</button>
-                  {isOwner ? (
+
+                  {/* OWNER ONLY */}
+
+                  {isOwner && (
+
                     <>
-                      <button onClick={openEditCommunity} className="btn btn-secondary btn-sm">✏️ Edit</button>
-                      <button onClick={deleteCommunity} className="btn btn-sm" style={{ background: "rgba(220,38,38,0.06)", color: "var(--accent-hover)", border: "1px solid rgba(220,38,38,0.15)" }}>🗑️ Delete</button>
+                      <button
+                        onClick={() =>
+                          setShowSubmitLink(true)
+                        }
+                        className="btn btn-primary"
+                      >
+                        ➕ Submit Link
+                      </button>
+
+                      <button
+                        onClick={openEditCommunity}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        ✏️ Edit
+                      </button>
+
+                      <button
+                        onClick={deleteCommunity}
+                        className="btn btn-sm"
+                        style={{
+                          background:
+                            "rgba(220,38,38,0.06)",
+
+                          color:
+                            "var(--accent-hover)",
+
+                          border:
+                            "1px solid rgba(220,38,38,0.15)"
+                        }}
+                      >
+                        🗑️ Delete
+                      </button>
                     </>
-                  ) : (
-                    <button onClick={leaveCommunity} className="btn btn-outline btn-sm">Leave</button>
+
                   )}
+
+                  {/* NORMAL MEMBERS */}
+
+                  {!isOwner && (
+
+                    <button
+                      onClick={leaveCommunity}
+                      className="btn btn-outline btn-sm"
+                    >
+                      Leave
+                    </button>
+
+                  )}
+
                 </>
+
               ) : (
-                <button onClick={joinCommunity} className="btn btn-primary btn-lg">Join Community</button>
+
+                <button
+                  onClick={joinCommunity}
+                  className="btn btn-primary btn-lg"
+                >
+                  Join Community
+                </button>
+
               )}
             </div>
           </div>

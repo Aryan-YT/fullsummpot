@@ -21,33 +21,66 @@ export default function AdminPage() {
 
   const adminID = user ? parseInt(user.UserID || user.userid || user.nameid || user.id || 0) : 0;
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = async () => {
+
     setLoading(true);
+
     try {
-      const [s, u, c, p, l] = await Promise.all([
-        API.get(`/Admin/stats?adminID=${adminID}`),
-        API.get(`/Admin/users?adminID=${adminID}`),
-        API.get(`/Admin/communities?adminID=${adminID}`),
-        API.get(`/Admin/posts?adminID=${adminID}`),
-        API.get(`/Admin/links?adminID=${adminID}`),
-      ]);
-      setStats(s.data); setUsers(u.data); setCommunities(c.data); setPosts(p.data); setLinks(l.data);
+
+      const [s, u, c, p, l] =
+        await Promise.all([
+
+          API.get(`/Admin/stats?adminID=${adminID}`),
+
+          API.get(`/Admin/users?adminID=${adminID}`),
+
+          API.get(`/Admin/communities?adminID=${adminID}`),
+
+          API.get(`/Admin/posts?adminID=${adminID}`),
+
+          API.get(`/Admin/links?adminID=${adminID}`),
+
+        ]);
+
+      setStats(s.data);
+
+      setUsers(u.data);
+
+      setCommunities(c.data);
+
+      setPosts(p.data);
+
+      setLinks(l.data);
+
     } catch (e) {
-      if (e.response?.status === 401) { alert("Admin access required"); navigate("/"); }
-    } finally { setLoading(false); }
-  }, [adminID, navigate]);
+
+      if (e.response?.status === 401) {
+
+        alert("Admin access required");
+
+        navigate("/");
+
+      }
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
     if (user.role !== "Admin") { alert("Admin access required"); navigate("/"); return; }
     fetchAll();
-  }, [user, navigate, fetchAll]);
+  }, []);
 
-  const deleteUser = async (id) => { if (!window.confirm("Delete this user and all their data?")) return; try { await API.delete(`/Admin/users/${id}?adminID=${adminID}`); fetchAll(); } catch {} };
-  const changeRole = async (id, role) => { try { await API.put(`/Admin/users/${id}/role?adminID=${adminID}`, { role }); fetchAll(); } catch {} };
-  const deleteCommunity = async (id) => { if (!window.confirm("Delete this community and all its content?")) return; try { await API.delete(`/Admin/communities/${id}?adminID=${adminID}`); fetchAll(); } catch {} };
-  const deletePost = async (id) => { if (!window.confirm("Delete this post?")) return; try { await API.delete(`/Admin/posts/${id}?adminID=${adminID}`); fetchAll(); } catch {} };
-  const deleteLink = async (id) => { if (!window.confirm("Delete this link?")) return; try { await API.delete(`/Admin/links/${id}?adminID=${adminID}`); fetchAll(); } catch {} };
+  const deleteUser = async (id) => { if (!window.confirm("Delete this user and all their data?")) return; try { await API.delete(`/Admin/users/${id}?adminID=${adminID}`); fetchAll(); } catch { } };
+  const changeRole = async (id, role) => { try { await API.put(`/Admin/users/${id}/role?adminID=${adminID}`, { role }); fetchAll(); } catch { } };
+  const deleteCommunity = async (id) => { if (!window.confirm("Delete this community and all its content?")) return; try { await API.delete(`/Admin/communities/${id}?adminID=${adminID}`); fetchAll(); } catch { } };
+  const deletePost = async (id) => { if (!window.confirm("Delete this post?")) return; try { await API.delete(`/Admin/posts/${id}?adminID=${adminID}`); fetchAll(); } catch { } };
+  const deleteLink = async (id) => { if (!window.confirm("Delete this link?")) return; try { await API.delete(`/Admin/links/${id}?adminID=${adminID}`); fetchAll(); } catch { } };
 
   if (!user || user.role !== "Admin") return null;
 
