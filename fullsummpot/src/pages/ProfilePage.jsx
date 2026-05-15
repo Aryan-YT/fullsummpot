@@ -1,825 +1,177 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-
+import { useParams, useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import API from "../services/api";
 import { getUserData } from "../utils/auth";
 
-function ProfilePage() {
-
+export default function ProfilePage() {
   const { id } = useParams();
-
-  const currentUser =
-    getUserData();
-
+  const navigate = useNavigate();
+  const currentUser = getUserData();
   const [user, setUser] = useState(null);
-
   const [posts, setPosts] = useState([]);
+  const [createdComm, setCreatedComm] = useState([]);
+  const [joinedComm, setJoinedComm] = useState([]);
+  const [links, setLinks] = useState([]);
+  const [points, setPoints] = useState(null);
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [profileImage, setProfileImage] = useState(null);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [showFollowing, setShowFollowing] = useState(false);
+  const isOwn = currentUser && parseInt(currentUser.UserID) === parseInt(id);
 
-  const [createdCommunities,
-    setCreatedCommunities]
-    = useState([]);
+  useEffect(() => { fetchAll(); }, [id]); // eslint-disable-line
 
-  const [joinedCommunities,
-    setJoinedCommunities]
-    = useState([]);
-
-  const [username, setUsername]
-    = useState("");
-
-  const [bio, setBio]
-    = useState("");
-
-  const [profileImage,
-    setProfileImage]
-    = useState(null);
-
-  // FOLLOW STATES
-
-  const [followersCount,
-    setFollowersCount]
-    = useState(0);
-
-  const [followingCount,
-    setFollowingCount]
-    = useState(0);
-
-  const [isFollowing,
-    setIsFollowing]
-    = useState(false);
-
-  const [followers,
-    setFollowers]
-    = useState([]);
-
-  const [following,
-    setFollowing]
-    = useState([]);
-
-  const [showFollowers,
-    setShowFollowers]
-    = useState(false);
-
-  const [showFollowing,
-    setShowFollowing]
-    = useState(false);
-
-  useEffect(() => {
-
-    fetchProfile();
-
-    fetchPosts();
-
-    fetchCommunities();
-
-    fetchFollowers();
-
-    fetchFollowing();
-
-    checkFollowing();
-
-  }, [id]);
-
-  // FETCH PROFILE
-
-  const fetchProfile = async () => {
-
-    try {
-
-      const response =
-        await API.get(
-          `/Auth/profile/${id}`
-        );
-
-      setUser(response.data);
-
-      setUsername(
-        response.data.username
-      );
-
-      setBio(
-        response.data.bio || ""
-      );
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
+  const fetchAll = async () => {
+    await Promise.all([fetchProfile(), fetchPosts(), fetchComm(), fetchFollow(), fetchLinks(), fetchPoints()]);
   };
 
-  // FETCH POSTS
-
-  const fetchPosts = async () => {
-
-    try {
-
-      const response =
-        await API.get("/Posts");
-
-      const userPosts =
-        response.data.filter(
-          (post) =>
-            post.userID ===
-            parseInt(id)
-        );
-
-      setPosts(userPosts);
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
+  const fetchProfile = async () => { try { const d = (await API.get(`/Auth/profile/${id}`)).data; setUser(d); setUsername(d.username); setBio(d.bio || ""); } catch {} };
+  const fetchPosts = async () => { try { const d = (await API.get("/Posts")).data; setPosts(d.filter(p => p.userID === parseInt(id))); } catch {} };
+  const fetchComm = async () => { try { const d = (await API.get("/Communities")).data; setCreatedComm(d.filter(c => c.ownerID === parseInt(id))); const j = (await API.get(`/Communities/joined/${id}`)).data; setJoinedComm(j); } catch {} };
+  const fetchFollow = async () => {
+    try { const r = (await API.get(`/Auth/followers/${id}`)).data; setFollowers(r); setFollowersCount(r.length); } catch {}
+    try { const r = (await API.get(`/Auth/following/${id}`)).data; setFollowing(r); setFollowingCount(r.length); } catch {}
+    if (currentUser) { try { const r = (await API.get(`/Auth/isfollowing?followerID=${currentUser.UserID}&followingID=${id}`)).data; setIsFollowing(r.isFollowing); } catch {} }
   };
-
-  // FETCH COMMUNITIES
-
-  const fetchCommunities =
-    async () => {
-
-      try {
-
-        const response =
-          await API.get(
-            "/Communities"
-          );
-
-        const allCommunities =
-          response.data;
-
-        // CREATED
-
-        const created =
-          allCommunities.filter(
-            (community) =>
-              community.ownerID ===
-              parseInt(id)
-          );
-
-        setCreatedCommunities(
-          created
-        );
-
-        // JOINED
-
-        const joinedResponse =
-          await API.get(
-            `/Communities/joined/${id}`
-          );
-
-        setJoinedCommunities(
-          joinedResponse.data
-        );
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    };
-
-  // FETCH FOLLOWERS
-
-  const fetchFollowers =
-    async () => {
-
-      try {
-
-        const response =
-          await API.get(
-            `/Auth/followers/${id}`
-          );
-
-        setFollowers(
-          response.data
-        );
-
-        setFollowersCount(
-          response.data.length
-        );
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    };
-
-  // FETCH FOLLOWING
-
-  const fetchFollowing =
-    async () => {
-
-      try {
-
-        const response =
-          await API.get(
-            `/Auth/following/${id}`
-          );
-
-        setFollowing(
-          response.data
-        );
-
-        setFollowingCount(
-          response.data.length
-        );
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    };
-
-  // CHECK FOLLOWING
-
-  const checkFollowing =
-    async () => {
-
-      if (!currentUser)
-        return;
-
-      try {
-
-        const response =
-          await API.get(
-            `/Auth/isfollowing?followerID=${currentUser.UserID}&followingID=${id}`
-          );
-
-        setIsFollowing(
-          response.data
-            .isFollowing
-        );
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    };
-
-  // FOLLOW USER
-
-  const followUser =
-    async () => {
-
-      if (!currentUser) {
-
-        alert(
-          "Please login first"
-        );
-
-        return;
-
-      }
-
-      try {
-
-        const response =
-          await API.post(
-            "/Auth/follow",
-            {
-              followerID:
-                parseInt(
-                  currentUser.UserID
-                ),
-
-              followingID:
-                parseInt(id)
-            }
-          );
-
-        setIsFollowing(
-          response.data
-            .following
-        );
-
-        fetchFollowers();
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    };
-
-  // UPDATE PROFILE
-
-  const updateProfile =
-    async () => {
-
-      try {
-
-        const formData =
-          new FormData();
-
-        formData.append(
-          "username",
-          username
-        );
-
-        formData.append(
-          "bio",
-          bio
-        );
-
-        formData.append(
-          "userID",
-          currentUser.UserID
-        );
-
-        if (profileImage) {
-
-          formData.append(
-            "profileImage",
-            profileImage
-          );
-
-        }
-
-        await API.put(
-          `/Auth/profile/${id}`,
-          formData,
-          {
-            headers: {
-              "Content-Type":
-                "multipart/form-data"
-            }
-          }
-        );
-
-        fetchProfile();
-
-        alert(
-          "Profile Updated!"
-        );
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    };
-
-  return (
-
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
-
-      <Navbar />
-
-      <div className="max-w-6xl mx-auto p-4 md:p-8">
-
-        {/* PROFILE CARD */}
-
-        <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-4 md:p-8 shadow-2xl mb-10">
-
-          <div className="flex flex-col md:flex-row gap-8 items-center">
-
-            {/* PROFILE IMAGE */}
-
-            <div>
-
-              {user?.profileImageUrl ? (
-
-                <img
-                  src={
-                    user.profileImageUrl
-                  }
-                  alt="Profile"
-                  className="w-28 h-28 md:w-40 md:h-40 rounded-full object-cover border-4 border-blue-500"
-                />
-
-              ) : (
-
-                <div className="w-28 h-28 md:w-40 md:h-40 rounded-full bg-slate-700 flex items-center justify-center text-white text-3xl md:text-5xl font-bold">
-
-                  {user?.username?.charAt(
-                    0
-                  )}
-
-                </div>
-
-              )}
-
+  const fetchLinks = async () => { try { setLinks((await API.get(`/Links/user/${id}`)).data); } catch {} };
+  const fetchPoints = async () => { try { setPoints((await API.get(`/Links/points/${id}`)).data); } catch {} };
+
+  const followUser = async () => { if (!currentUser) { navigate("/login"); return; } try { const r = (await API.post("/Auth/follow", { followerID: parseInt(currentUser.UserID), followingID: parseInt(id) })).data; setIsFollowing(r.following); fetchFollow(); } catch {} };
+  const updateProfile = async () => { try { const fd = new FormData(); fd.append("username", username); fd.append("bio", bio); fd.append("userID", currentUser.UserID); if (profileImage) fd.append("profileImage", profileImage); await API.put(`/Auth/profile/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }); fetchProfile(); } catch {} };
+  const clickLink = async (linkID, url) => { if (!currentUser) { navigate("/login"); return; } try { await API.post("/Links/click", { linkID, clickedByUserID: parseInt(currentUser.UserID) }); window.open(url, "_blank"); } catch {} };
+
+  const stats = [
+    { label: "Posts", value: posts.length, icon: "📝" },
+    { label: "Created", value: createdComm.length, icon: "🏗️" },
+    { label: "Joined", value: joinedComm.length, icon: "👥" },
+    { label: "Followers", value: followersCount, icon: "❤️", onClick: () => setShowFollowers(!showFollowers) },
+    { label: "Following", value: followingCount, icon: "➡️", onClick: () => setShowFollowing(!showFollowing) },
+    { label: "Points", value: points?.availablePoints ?? 0, icon: "⭐" },
+  ];
+
+  const UserList = ({ title, list, show }) => show && (
+    <div className="card animate-slide-up" style={{ marginBottom: "16px" }}>
+      <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.05rem", margin: "0 0 12px" }}>{title}</h3>
+      {list.length === 0 ? <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>None yet</p> : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {list.map(f => (
+            <div key={f.userID} onClick={() => navigate(`/profile/${f.userID}`)} style={{ padding: "10px 14px", borderRadius: "var(--radius-sm)", background: "var(--bg-elevated)", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", transition: "all 0.2s" }}>
+              <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.75rem", color: "var(--accent-hover)" }}>{f.username?.charAt(0).toUpperCase()}</div>
+              <span style={{ fontWeight: 600, fontSize: "0.88rem" }}>{f.username}</span>
             </div>
-
-            {/* PROFILE INFO */}
-
-            <div className="flex-1 w-full">
-
-              {/* OWN PROFILE */}
-
-              {currentUser &&
-                parseInt(currentUser.UserID)
-                === parseInt(id) ? (
-
-                <>
-
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) =>
-                      setUsername(
-                        e.target.value
-                      )
-                    }
-                    className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-4 text-2xl font-bold"
-                  />
-
-                  <textarea
-                    placeholder="Write your bio..."
-                    value={bio}
-                    onChange={(e) =>
-                      setBio(
-                        e.target.value
-                      )
-                    }
-                    className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-4"
-                  />
-
-                  <input
-                    type="file"
-                    onChange={(e) =>
-                      setProfileImage(
-                        e.target.files[0]
-                      )
-                    }
-                    className="text-white mb-4"
-                  />
-
-                  <button
-                    onClick={updateProfile}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all"
-                  >
-                    Save Profile
-                  </button>
-
-                </>
-
-              ) : (
-
-                /* WATCHER VIEW */
-
-                <>
-
-                  <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 text-center md:text-left">
-                    {user?.username}
-                  </h1>
-
-                  {user?.bio && (
-
-                    <p className="text-slate-300 text-base md:text-xl mb-6 text-center md:text-left">
-                      {user.bio}
-                    </p>
-
-                  )}
-
-                  {/* FOLLOW BUTTON */}
-
-                  {currentUser && (
-
-                    <button
-                      onClick={followUser}
-                      className={`px-6 py-3 rounded-xl transition-all text-white ${isFollowing
-                        ? "bg-red-500 hover:bg-red-600"
-                        : "bg-green-600 hover:bg-green-700"
-                        }`}
-                    >
-
-                      {isFollowing
-                        ? "Unfollow"
-                        : "Follow"}
-
-                    </button>
-
-                  )}
-
-                </>
-
-              )}
-
-            </div>
-
-          </div>
-
+          ))}
         </div>
-
-        {/* STATS */}
-
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 mb-10">
-
-          <div className="bg-white/10 p-4 md:p-6 rounded-3xl border border-white/10">
-
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-              {posts.length}
-            </h2>
-
-            <p className="text-slate-300">
-              Posts
-            </p>
-
-          </div>
-
-          <div className="bg-white/10 p-6 rounded-3xl border border-white/10">
-
-            <h2 className="text-3xl font-bold text-white mb-2">
-              {
-                createdCommunities.length
-              }
-            </h2>
-
-            <p className="text-slate-300">
-              Created
-            </p>
-
-          </div>
-
-          <div className="bg-white/10 p-6 rounded-3xl border border-white/10">
-
-            <h2 className="text-3xl font-bold text-white mb-2">
-              {
-                joinedCommunities.length
-              }
-            </h2>
-
-            <p className="text-slate-300">
-              Joined
-            </p>
-
-          </div>
-
-          <div
-            onClick={() =>
-              setShowFollowers(
-                !showFollowers
-              )
-            }
-            className="bg-white/10 p-6 rounded-3xl border border-white/10 cursor-pointer hover:bg-white/20 transition-all"
-          >
-
-            <h2 className="text-3xl font-bold text-white mb-2">
-              {followersCount}
-            </h2>
-
-            <p className="text-slate-300">
-              Followers
-            </p>
-
-          </div>
-
-          <div
-            onClick={() =>
-              setShowFollowing(
-                !showFollowing
-              )
-            }
-            className="bg-white/10 p-6 rounded-3xl border border-white/10 cursor-pointer hover:bg-white/20 transition-all"
-          >
-
-            <h2 className="text-3xl font-bold text-white mb-2">
-              {followingCount}
-            </h2>
-
-            <p className="text-slate-300">
-              Following
-            </p>
-
-          </div>
-
-        </div>
-
-        {/* FOLLOWERS */}
-
-        {showFollowers && (
-
-          <div className="bg-white/10 border border-white/10 rounded-3xl p-4 md:p-6 mb-10">
-
-            <h2 className="text-3xl font-bold text-white mb-5">
-              Followers
-            </h2>
-
-            <div className="space-y-4">
-
-              {followers.map(
-                (follower) => (
-
-                  <div
-                    key={
-                      follower.userID
-                    }
-                    onClick={() =>
-                      window.location.href =
-                      `/profile/${follower.userID}`
-                    }
-                    className="bg-slate-800 p-4 rounded-2xl cursor-pointer hover:bg-slate-700 transition-all"
-                  >
-
-                    <h3 className="text-white text-xl font-bold">
-                      {
-                        follower.username
-                      }
-                    </h3>
-
-                  </div>
-
-                )
-              )}
-
-            </div>
-
-          </div>
-
-        )}
-
-        {/* FOLLOWING */}
-
-        {showFollowing && (
-
-          <div className="bg-white/10 border border-white/10 rounded-3xl p-6 mb-10">
-
-            <h2 className="text-3xl font-bold text-white mb-5">
-              Following
-            </h2>
-
-            <div className="space-y-4">
-
-              {following.map(
-                (user) => (
-
-                  <div
-                    key={user.userID}
-                    onClick={() =>
-                      window.location.href =
-                      `/profile/${user.userID}`
-                    }
-                    className="bg-slate-800 p-4 rounded-2xl cursor-pointer hover:bg-slate-700 transition-all"
-                  >
-
-                    <h3 className="text-white text-xl font-bold">
-                      {user.username}
-                    </h3>
-
-                  </div>
-
-                )
-              )}
-
-            </div>
-
-          </div>
-
-        )}
-
-        {/* CREATED COMMUNITIES */}
-
-        <div className="mb-10">
-
-          <h2 className="text-3xl font-bold text-white mb-5">
-            Communities Created
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {createdCommunities.map(
-              (community) => (
-
-                <div
-                  key={
-                    community.communityID
-                  }
-                  onClick={() =>
-                    window.location.href =
-                    `/community/${community.communityID}`
-                  }
-                  className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
-                >
-
-                  <div className="h-44">
-
-                    {community.bannerUrl ? (
-
-                      <img
-                        src={
-                          community.bannerUrl
-                        }
-                        alt="Banner"
-                        className="w-full h-full object-cover"
-                      />
-
-                    ) : (
-
-                      <div className="w-full h-full bg-slate-800" />
-
-                    )}
-
-                  </div>
-
-                  <div className="p-6">
-
-                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                      {community.name}
-                    </h3>
-
-                    <p className="text-slate-300 mb-5">
-                      {
-                        community.description
-                      }
-                    </p>
-
-                  </div>
-
-                </div>
-
-              )
-            )}
-
-          </div>
-
-        </div>
-
-        {/* JOINED COMMUNITIES */}
-
-        <div className="mb-10">
-
-          <h2 className="text-3xl font-bold text-white mb-5">
-            Communities Joined
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-6">
-
-            {joinedCommunities.map(
-              (community) => (
-
-                <div
-                  key={
-                    community.communityID
-                  }
-                  onClick={() =>
-                    window.location.href =
-                    `/community/${community.communityID}`
-                  }
-                  className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
-                >
-
-                  <div className="h-44">
-
-                    {community.bannerUrl ? (
-
-                      <img
-                        src={
-                          community.bannerUrl
-                        }
-                        alt="Banner"
-                        className="w-full h-full object-cover"
-                      />
-
-                    ) : (
-
-                      <div className="w-full h-full bg-slate-800" />
-
-                    )}
-
-                  </div>
-
-                  <div className="p-6">
-
-                    <h3 className="text-3xl font-bold text-white mb-3">
-                      {community.name}
-                    </h3>
-
-                    <p className="text-slate-300">
-                      {
-                        community.description
-                      }
-                    </p>
-
-                  </div>
-
-                </div>
-
-              )
-            )}
-
-          </div>
-
-        </div>
-
-      </div>
-
+      )}
     </div>
-
   );
 
-}
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
+      <Navbar />
+      <div className="page-container" style={{ maxWidth: "900px" }}>
+        {/* Profile Card */}
+        <div className="hero-section" style={{ marginBottom: "24px", padding: "28px" }}>
+          <div className="orb" style={{ width: "200px", height: "200px", background: "rgba(220,38,38,0.04)", top: "-50px", right: "-30px" }} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "24px", alignItems: "center", position: "relative", zIndex: 1 }}>
+            <div>
+              {user?.profileImageUrl ? (
+                <img src={user.profileImageUrl} alt="" style={{ width: "96px", height: "96px", borderRadius: "50%", objectFit: "cover", border: "3px solid var(--accent)" }} className="avatar-glow" />
+              ) : (
+                <div style={{ width: "96px", height: "96px", borderRadius: "50%", background: "var(--accent-subtle)", border: "2px solid rgba(220,38,38,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.2rem", fontWeight: 800, color: "var(--accent-hover)" }}>
+                  {user?.username?.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              {isOwn ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <input className="input-field" value={username} onChange={(e) => setUsername(e.target.value)} style={{ fontSize: "1.15rem", fontWeight: 700 }} />
+                  <textarea className="input-field" placeholder="Write your bio…" value={bio} onChange={(e) => setBio(e.target.value)} rows={2} style={{ resize: "none" }} />
+                  <input type="file" accept="image/*" onChange={(e) => setProfileImage(e.target.files[0])} style={{ color: "var(--text-secondary)", fontSize: "0.82rem" }} />
+                  <button onClick={updateProfile} className="btn btn-primary" style={{ alignSelf: "flex-start" }}>Save Profile</button>
+                </div>
+              ) : (
+                <>
+                  <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 800, margin: "0 0 4px", letterSpacing: "-0.02em" }}>{user?.username}</h2>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: "0 0 4px" }}>{user?.email}</p>
+                  {user?.bio && <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: "0 0 12px", lineHeight: 1.5 }}>{user.bio}</p>}
+                  {currentUser && <button onClick={followUser} className={`btn ${isFollowing ? "btn-outline" : "btn-primary"}`}>{isFollowing ? "Unfollow" : "Follow"}</button>}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
 
-export default ProfilePage;
+        {/* Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", marginBottom: "24px" }}>
+          {stats.map(s => (
+            <div key={s.label} className="card stat-card" onClick={s.onClick} style={{ textAlign: "center", cursor: s.onClick ? "pointer" : "default", padding: "14px 10px" }}>
+              <div style={{ fontSize: "1rem", marginBottom: "4px" }}>{s.icon}</div>
+              <p style={{ fontSize: "1.3rem", fontWeight: 800, fontFamily: "var(--font-display)", margin: "0 0 1px", letterSpacing: "-0.02em" }}>{s.value}</p>
+              <p style={{ fontSize: "0.72rem", color: "var(--text-secondary)", margin: 0 }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <UserList title="Followers" list={followers} show={showFollowers} />
+        <UserList title="Following" list={following} show={showFollowing} />
+
+        {/* Links */}
+        {links.length > 0 && (
+          <section style={{ marginBottom: "24px" }}>
+            <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.1rem", margin: "0 0 12px" }}>🔗 Support Links</h3>
+            <div className="grid-auto">
+              {links.map(l => (
+                <div key={l.linkID} className="card" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px" }}>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ fontWeight: 600, fontSize: "0.88rem", margin: "0 0 3px" }}>{l.title}</h4>
+                    <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: 0 }}>🖱️ {l.clickCount} clicks</p>
+                  </div>
+                  <button onClick={() => clickLink(l.linkID, l.url)} className="btn btn-outline btn-sm">Support ↗</button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Communities */}
+        {createdComm.length > 0 && (
+          <section style={{ marginBottom: "24px" }}>
+            <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.1rem", margin: "0 0 12px" }}>🏗️ Created</h3>
+            <div className="grid-auto">
+              {createdComm.map(c => (
+                <Link key={c.communityID} to={`/community/${c.communityID}`} className="card" style={{ display: "block" }}>
+                  {c.bannerUrl && <div style={{ width: "100%", height: "80px", borderRadius: "var(--radius-sm)", overflow: "hidden", marginBottom: "10px" }}><img src={c.bannerUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>}
+                  <h4 style={{ fontWeight: 600, margin: "0 0 4px", fontSize: "0.92rem" }}>{c.name}</h4>
+                  <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", margin: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{c.description}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+        {joinedComm.length > 0 && (
+          <section>
+            <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.1rem", margin: "0 0 12px" }}>👥 Joined</h3>
+            <div className="grid-auto">
+              {joinedComm.map(c => (
+                <Link key={c.communityID} to={`/community/${c.communityID}`} className="card" style={{ display: "block" }}>
+                  <h4 style={{ fontWeight: 600, margin: "0 0 4px", fontSize: "0.92rem" }}>{c.name}</h4>
+                  <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", margin: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{c.description}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+      <Footer />
+    </div>
+  );
+}

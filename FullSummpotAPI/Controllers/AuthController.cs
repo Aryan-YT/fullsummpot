@@ -117,6 +117,10 @@ namespace FullSummpotAPI.Controllers
                 new Claim(
                     ClaimTypes.Role,
                     user.Role
+                ),
+                new Claim(
+                    "role",
+                    user.Role
                 )
             };
 
@@ -530,6 +534,31 @@ namespace FullSummpotAPI.Controllers
 
             return Ok(users);
         }
+
+        // CHANGE PASSWORD
+        [HttpPut("change-password")]
+        public IActionResult ChangePassword([FromBody] ChangePasswordModel model)
+        {
+            var user = _context.Users.Find(model.UserID);
+            if (user == null)
+                return NotFound(new { message = "User not found" });
+
+            bool validPassword = BCrypt.Net.BCrypt.Verify(model.CurrentPassword, user.PasswordHash);
+            if (!validPassword)
+                return BadRequest(new { message = "Current password is incorrect" });
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
+            _context.SaveChanges();
+
+            return Ok(new { message = "Password changed successfully" });
+        }
     }
 
-}
+    public class ChangePasswordModel
+    {
+        public int UserID { get; set; }
+        public string CurrentPassword { get; set; } = "";
+        public string NewPassword { get; set; } = "";
+    }
+
+}

@@ -1,766 +1,293 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import API from "../services/api";
 import { getUserData } from "../utils/auth";
 
-function CommunityPage() {
+function extractVideoId(url) { return url?.match(/(?:v=|youtu\.be\/)([^&?]+)/)?.[1] ?? null; }
+function timeAgo(d) { const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000); if (m < 1) return "now"; if (m < 60) return `${m}m`; const h = Math.floor(m / 60); if (h < 24) return `${h}h`; return `${Math.floor(h / 24)}d`; }
+function renderWithLinks(t) { const r = /(https?:\/\/[^\s]+)/g; return t.split(r).map((p, i) => p.match(r) ? <a key={i} href={p} target="_blank" rel="noopener noreferrer" style={{ color: "var(--info)", textDecoration: "underline", wordBreak: "break-all" }}>{p}</a> : p); }
 
+const niches = ["Gaming", "Tech", "Education", "Music", "Comedy", "Vlogging", "Finance", "Fitness", "Food", "Travel", "Other"];
+
+const getUserId = (u) => u ? parseInt(u.UserID || u.userid || u.nameid || u.id || 0) : 0;
+
+export default function CommunityPage() {
   const { id } = useParams();
-
   const navigate = useNavigate();
-
   const user = getUserData();
-
-  const [posts, setPosts] = useState([]);
-
   const [community, setCommunity] = useState(null);
-
-  const [title, setTitle] = useState("");
-
-  const [content, setContent] = useState("");
-
-  const [image, setImage] = useState(null);
-
+  const [posts, setPosts] = useState([]);
+  const [links, setLinks] = useState([]);
   const [likes, setLikes] = useState({});
-
   const [comments, setComments] = useState({});
-
   const [commentInputs, setCommentInputs] = useState({});
-
+  const [tab, setTab] = useState("links");
+  const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [image, setImage] = useState(null);
+  const [showSubmitLink, setShowSubmitLink] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkTitle, setLinkTitle] = useState("");
+  const [submittingLink, setSubmittingLink] = useState(false);
   const [editingPostID, setEditingPostID] = useState(null);
-
   const [editTitle, setEditTitle] = useState("");
-
   const [editContent, setEditContent] = useState("");
 
-  // OWNER CHECK
+  // Edit community state
+  const [showEditCommunity, setShowEditCommunity] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editNiche, setEditNiche] = useState("");
+  const [editBanner, setEditBanner] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  const isOwner =
-    user &&
-    community &&
-    parseInt(user.UserID) === community.ownerID;
+  const isOwner = user && community && getUserId(user) === community.ownerID;
 
-  useEffect(() => {
+  useEffect(() => { setLoading(true); Promise.all([fetchCommunity(), fetchPosts(), fetchLinks()]).then(() => setLoading(false)); }, [id]); // eslint-disable-line
 
-    fetchCommunity();
+  const fetchCommunity = async () => { try { setCommunity((await API.get(user ? `/Communities/${id}?userID=${getUserId(user)}` : `/Communities/${id}`)).data); } catch {} };
+  const fetchPosts = async () => { try { const d = (await API.get(`/Posts/community/${id}`)).data; setPosts(d); d.forEach(p => { fetchLikes(p.postID); fetchComments(p.postID); }); } catch {} };
+  const fetchLinks = async () => { try { setLinks((await API.get(user ? `/Links/community/${id}?userID=${getUserId(user)}` : `/Links/community/${id}`)).data); } catch {} };
+  const fetchLikes = async (pid) => { try { const res = await API.get(`/Posts/${pid}/likes`); setLikes(p => ({ ...p, [pid]: res.data.count })); } catch {} };
+  const fetchComments = async (pid) => { try { const res = await API.get(`/Posts/${pid}/comments`); setComments(p => ({ ...p, [pid]: res.data })); } catch {} };
 
-    fetchPosts();
+  const likePost = async (pid) => { if (!user) { navigate("/login"); return; } try { await API.post("/Posts/like", { userID: getUserId(user), postID: pid }); fetchLikes(pid); } catch {} };
+  const addComment = async (pid) => { if (!user) { navigate("/login"); return; } try { await API.post("/Posts/comment", { content: commentInputs[pid], userID: getUserId(user), postID: pid }); setCommentInputs(p => ({ ...p, [pid]: "" })); fetchComments(pid); } catch {} };
+  const createPost = async () => { if (!user) return; try { const fd = new FormData(); fd.append("title", title); fd.append("content", content); fd.append("userID", getUserId(user)); fd.append("communityID", parseInt(id)); if (image) fd.append("image", image); await API.post("/Posts", fd, { headers: { "Content-Type": "multipart/form-data" } }); setTitle(""); setContent(""); setImage(null); fetchPosts(); } catch { alert("Only community owner can post"); } };
+  const deletePost = async (pid) => { if (!window.confirm("Delete this post?")) return; try { await API.delete(`/Posts/${pid}`); fetchPosts(); } catch {} };
+  const savePostEdit = async (pid) => { try { await API.put(`/Posts/${pid}`, { title: editTitle, content: editContent }); setEditingPostID(null); fetchPosts(); } catch {} };
 
-  }, [id]);
+  const submitLink = async (e) => { e.preventDefault(); if (!user) { navigate("/login"); return; } setSubmittingLink(true); try { await API.post("/Links", { userID: getUserId(user), communityID: parseInt(id), title: linkTitle, url: linkUrl }); setLinkUrl(""); setLinkTitle(""); setShowSubmitLink(false); fetchLinks(); } catch {} finally { setSubmittingLink(false); } };
+  const clickLink = async (linkID, url) => { if (!user) { navigate("/login"); return; } try { await API.post("/Links/click", { linkID, clickedByUserID: getUserId(user) }); fetchLinks(); window.open(url, "_blank"); } catch {} };
+  const deleteLink = async (linkID) => { if (!window.confirm("Delete this link?")) return; try { await API.delete(`/Links/${linkID}`); fetchLinks(); } catch {} };
 
-  // CLICKABLE LINKS
+  const joinCommunity = async () => { if (!user) { navigate("/login"); return; } try { await API.post("/Communities/join", { userID: getUserId(user), communityID: parseInt(id) }); fetchCommunity(); } catch {} };
+  const leaveCommunity = async () => { try { await API.post("/Communities/leave", { userID: getUserId(user), communityID: parseInt(id) }); fetchCommunity(); } catch (e) { alert(e?.response?.data?.message || "Error"); } };
 
-  const renderWithLinks = (text) => {
-
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-
-    return text.split(urlRegex).map((part, index) => {
-
-      if (part.match(urlRegex)) {
-
-        return (
-
-          <a
-            key={index}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 underline break-all"
-          >
-            {part}
-          </a>
-
-        );
-
-      }
-
-      return part;
-
-    });
-
-  };
-
-  // FETCH COMMUNITY
-
-  const fetchCommunity = async () => {
-
+  const openEditCommunity = () => { setEditName(community.name); setEditDesc(community.description); setEditNiche(community.niche || ""); setEditBanner(null); setShowEditCommunity(true); };
+  const saveCommunityEdit = async (e) => {
+    e.preventDefault(); setSaving(true);
     try {
-
-      const response = await API.get(`/Communities/${id}`);
-
-      setCommunity(response.data);
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
+      const fd = new FormData(); fd.append("name", editName); fd.append("description", editDesc); fd.append("niche", editNiche);
+      if (editBanner) fd.append("banner", editBanner);
+      await API.put(`/Communities/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+      setShowEditCommunity(false); fetchCommunity();
+    } catch {} finally { setSaving(false); }
+  };
+  const deleteCommunity = async () => {
+    if (!window.confirm("Are you sure? This will permanently delete this community, all its posts, and links.")) return;
+    try { await API.delete(`/Communities/${id}`); navigate("/communities"); } catch {}
   };
 
-  // FETCH POSTS
-
-  const fetchPosts = async () => {
-
-    try {
-
-      const response = await API.get(`/Posts/community/${id}`);
-
-      setPosts(response.data);
-
-      response.data.forEach((post) => {
-
-        fetchLikes(post.postID);
-
-        fetchComments(post.postID);
-
-      });
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-  };
-
-  // FETCH LIKES
-
-  const fetchLikes = async (postID) => {
-
-    try {
-
-      const response = await API.get(`/Posts/${postID}/likes`);
-
-      setLikes((prev) => ({
-
-        ...prev,
-
-        [postID]: response.data.count
-
-      }));
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-  };
-
-  // LIKE POST
-
-  const likePost = async (postID) => {
-
-    if (!user) {
-
-      requireLogin();
-
-      return;
-
-    }
-
-    try {
-
-      await API.post("/Posts/like", {
-
-        userID: parseInt(user.UserID),
-
-        postID: postID
-
-      });
-
-      fetchLikes(postID);
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-  };
-
-  // FETCH COMMENTS
-
-  const fetchComments = async (postID) => {
-
-    try {
-
-      const response = await API.get(`/Posts/${postID}/comments`);
-
-      setComments((prev) => ({
-
-        ...prev,
-
-        [postID]: response.data
-
-      }));
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-  };
-
-  // ADD COMMENT
-
-  const addComment = async (postID) => {
-
-    if (!user) {
-
-      requireLogin();
-
-      return;
-
-    }
-
-    try {
-
-      await API.post("/Posts/comment", {
-
-        content: commentInputs[postID],
-
-        userID: parseInt(user.UserID),
-
-        postID: postID
-
-      });
-
-      setCommentInputs((prev) => ({
-
-        ...prev,
-
-        [postID]: ""
-
-      }));
-
-      fetchComments(postID);
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-  };
-
-  // CREATE POST
-
-  const requireLogin = () => {
-
-    alert(
-      "Please login or register first."
-    );
-
-    navigate("/login");
-
-  };
-
-  const createPost = async () => {
-
-    if (!user) {
-
-      requireLogin();
-
-      return;
-
-    }
-
-    try {
-
-      const formData = new FormData();
-
-      formData.append("title", title);
-
-      formData.append("content", content);
-
-      formData.append("userID", parseInt(user.UserID));
-
-      formData.append("communityID", parseInt(id));
-
-      if (image) {
-
-        formData.append("image", image);
-
-      }
-
-      await API.post("/Posts", formData, {
-
-        headers: {
-
-          "Content-Type": "multipart/form-data"
-
-        }
-
-      });
-
-      setTitle("");
-
-      setContent("");
-
-      setImage(null);
-
-      fetchPosts();
-
-    } catch (error) {
-
-      console.log(error);
-
-      alert("Only community owner can post");
-
-    }
-
-  };
-
-  // DELETE POST
-
-  const deletePost = async (postID) => {
-
-    if (!user) {
-
-      requireLogin();
-
-      return;
-
-    }
-
-    try {
-
-      await API.delete(`/Posts/${postID}`);
-
-      fetchPosts();
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-  };
-
-  // START EDIT
-
-  const startEdit = (post) => {
-
-    setEditingPostID(post.postID);
-
-    setEditTitle(post.title);
-
-    setEditContent(post.content);
-
-  };
-
-  // SAVE EDIT
-
-  const saveEdit = async (postID) => {
-
-    if (!user) {
-
-      requireLogin();
-
-      return;
-
-    }
-
-    try {
-
-      await API.put(`/Posts/${postID}`, {
-
-        title: editTitle,
-
-        content: editContent
-
-      });
-
-      setEditingPostID(null);
-
-      fetchPosts();
-
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-  };
+  if (loading) return <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}><Navbar /><div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 0" }}><div className="spinner" /></div></div>;
+  if (!community) return <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}><Navbar /><div className="page-container"><div className="empty-state"><p>Community not found.</p></div></div></div>;
 
   return (
-
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
-
+    <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
       <Navbar />
+      <div className="page-container" style={{ maxWidth: "1000px" }}>
+        <button onClick={() => navigate(-1)} className="btn-ghost" style={{ marginBottom: "12px", padding: "4px 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>← Back</button>
 
-      <div className="max-w-5xl mx-auto p-4 md:p-8">
-
-        {/* COMMUNITY INFO */}
-
-        {/* COMMUNITY HERO */}
-
-        {community && (
-
-          <div className="relative mb-12 rounded-3xl md:rounded-[35px] overflow-hidden border border-white/10 shadow-2xl">
-
-            {/* BANNER */}
-
-            <div className="h-[250px] md:h-[350px] relative">
-
-              {community.bannerUrl ? (
-
-                <img
-                  src={community.bannerUrl}
-                  alt="Banner"
-                  className="w-full h-full object-cover"
-                />
-
-              ) : (
-
-                <div className="w-full h-full bg-slate-800" />
-
-              )}
-
-              {/* OVERLAY */}
-
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-
-              {/* CONTENT */}
-
-              <div className="absolute bottom-0 left-0 w-full p-4 md:p-10">
-
-                <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white/10 backdrop-blur-lg border border-white/20 flex items-center justify-center text-white text-4xl font-bold">
-
-                    {community.name?.charAt(0)}
-
-                  </div>
-
-                  <div>
-
-                    <h1 className="text-3xl md:text-6xl font-black text-white mb-2 tracking-tight text-center md:text-left">
-
-                      {community.name}
-
-                    </h1>
-
-                    <p className="text-slate-300 text-sm md:text-lg text-center md:text-left">
-
-                      {community.description}
-
-                    </p>
-
-                  </div>
-
-                </div>
-
-                {/* STATS */}
-
-                <div className="flex gap-4 mt-6 flex-wrap">
-
-                  <div className="bg-white/10 backdrop-blur-lg px-5 py-3 rounded-2xl border border-white/10">
-
-                    <p className="text-slate-300 text-sm">
-                      Posts
-                    </p>
-
-                    <h2 className="text-white text-2xl font-bold">
-                      {posts.length}
-                    </h2>
-
-                  </div>
-
-                  <div className="bg-white/10 backdrop-blur-lg px-5 py-3 rounded-2xl border border-white/10">
-
-                    <p className="text-slate-300 text-sm">
-                      Community ID
-                    </p>
-
-                    <h2 className="text-white text-2xl font-bold">
-                      #{community.communityID}
-                    </h2>
-
-                  </div>
-
-                  {isOwner && (
-
-                    <div className="bg-yellow-500 text-black px-5 py-3 rounded-2xl font-bold flex items-center">
-
-                      👑 You Own This Community
-
-                    </div>
-
-                  )}
-
-                </div>
-
-              </div>
-
+        {/* Header Card */}
+        <div className="hero-section" style={{ marginBottom: "24px", padding: "28px" }}>
+          <div className="orb" style={{ width: "250px", height: "250px", background: "rgba(220,38,38,0.04)", top: "-60px", right: "-40px" }} />
+          {community.bannerUrl && (
+            <div style={{ width: "100%", height: "180px", borderRadius: "var(--radius-md)", overflow: "hidden", marginBottom: "16px" }}>
+              <img src={community.bannerUrl} alt="Banner" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
-
-          </div>
-
-        )}
-
-        {/* CREATE POST */}
-
-        {isOwner && (
-
-          <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-4 md:p-6 shadow-2xl mb-10">
-
-            <h2 className="text-2xl text-white font-bold mb-5">
-              Create Post
-            </h2>
-
-            <div className="space-y-4">
-
-              <input
-                type="text"
-                placeholder="Post Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
-              />
-
-              <textarea
-                placeholder="Share something..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full p-4 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
-              />
-
-              <input
-                type="file"
-                onChange={(e) => setImage(e.target.files[0])}
-                className="text-white"
-              />
-
-              <button
-                onClick={createPost}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all"
-              >
-                Post
-              </button>
-
+          )}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px", position: "relative", zIndex: 1 }}>
+            <div>
+              <span className="badge badge-accent" style={{ marginBottom: "8px", display: "inline-block" }}>{community.niche || "General"}</span>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 800, margin: "8px 0 4px", letterSpacing: "-0.02em" }}>{community.name}</h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", margin: "0 0 8px" }}>{community.description}</p>
+              <p style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", color: "var(--text-muted)", margin: 0 }}>👥 {community.memberCount} members</p>
             </div>
-
-          </div>
-
-        )}
-
-        {/* POSTS */}
-
-        <div className="space-y-6">
-
-          {posts.map((post) => (
-
-            <div
-              key={post.postID}
-              className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl p-4 md:p-6 shadow-2xl"
-            >
-
-              {/* PROFILE */}
-
-              <div className="flex items-center gap-3 mb-5 flex-wrap">
-
-                {post.profileImageUrl ? (
-
-                  <img
-                    src={post.profileImageUrl}
-                    alt="Profile"
-                    className="w-12 h-12 rounded-full object-cover border border-slate-600 cursor-pointer"
-                    onClick={() =>
-                      navigate(`/profile/${post.userID}`)
-                    }
-                  />
-
-                ) : (
-
-                  <div
-                    onClick={() =>
-                      navigate(`/profile/${post.userID}`)
-                    }
-                    className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold cursor-pointer"
-                  >
-                    {post.username?.charAt(0)}
-                  </div>
-
-                )}
-
-                <div>
-
-                  <p
-                    onClick={() =>
-                      navigate(`/profile/${post.userID}`)
-                    }
-                    className="text-white font-bold cursor-pointer"
-                  >
-                    {post.username}
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* TITLE */}
-
-              {editingPostID === post.postID ? (
-
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-3"
-                />
-
-              ) : (
-
-                <h2 className="text-xl md:text-2xl font-bold text-white mb-3">
-                  {post.title}
-                </h2>
-
-              )}
-
-              {/* CONTENT */}
-
-              {editingPostID === post.postID ? (
-
-                <textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none mb-5"
-                />
-
-              ) : (
-
-                <p className="text-slate-300 text-base md:text-lg mb-5 break-words">
-                  {renderWithLinks(post.content)}
-                </p>
-
-              )}
-
-              {/* IMAGE */}
-
-              {post.imageUrl && (
-
-                <img
-                  src={post.imageUrl}
-                  alt="Post"
-                  className="w-full rounded-2xl mb-5"
-                />
-
-              )}
-
-              {/* EDIT DELETE */}
-
-              {isOwner && (
-
-                <div className="flex flex-wrap gap-3 mb-5">
-
-                  {editingPostID === post.postID ? (
-
-                    <button
-                      onClick={() => saveEdit(post.postID)}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded-xl transition-all"
-                    >
-                      Save
-                    </button>
-
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0, flexWrap: "wrap" }}>
+              {community.isMember ? (
+                <>
+                  <button onClick={() => setShowSubmitLink(true)} className="btn btn-primary">➕ Submit Link</button>
+                  {isOwner ? (
+                    <>
+                      <button onClick={openEditCommunity} className="btn btn-secondary btn-sm">✏️ Edit</button>
+                      <button onClick={deleteCommunity} className="btn btn-sm" style={{ background: "rgba(220,38,38,0.06)", color: "var(--accent-hover)", border: "1px solid rgba(220,38,38,0.15)" }}>🗑️ Delete</button>
+                    </>
                   ) : (
-
-                    <button
-                      onClick={() => startEdit(post)}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded-xl transition-all"
-                    >
-                      Edit
-                    </button>
-
+                    <button onClick={leaveCommunity} className="btn btn-outline btn-sm">Leave</button>
                   )}
-
-                  <button
-                    onClick={() => deletePost(post.postID)}
-                    className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-xl transition-all"
-                  >
-                    Delete
-                  </button>
-
-                </div>
-
+                </>
+              ) : (
+                <button onClick={joinCommunity} className="btn btn-primary btn-lg">Join Community</button>
               )}
-
-              {/* LIKE */}
-
-              <button
-                onClick={() => likePost(post.postID)}
-                className="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2 rounded-xl transition-all mb-5"
-              >
-                ❤️ {likes[post.postID] || 0} Likes
-              </button>
-
-              {/* COMMENT INPUT */}
-
-              <div className="mb-5 space-y-3 w-full">
-
-                <input
-                  type="text"
-                  placeholder="Write a comment..."
-                  value={commentInputs[post.postID] || ""}
-                  onChange={(e) =>
-                    setCommentInputs((prev) => ({
-
-                      ...prev,
-
-                      [post.postID]: e.target.value
-
-                    }))
-                  }
-                  className="w-full p-3 rounded-xl bg-slate-900/70 border border-slate-700 text-white outline-none"
-                />
-
-                <button
-                  onClick={() => addComment(post.postID)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl transition-all"
-                >
-                  Add Comment
-                </button>
-
-              </div>
-
-              {/* COMMENTS */}
-
-              <div className="space-y-3">
-
-                {(comments[post.postID] || []).map((comment) => (
-
-                  <div
-                    key={comment.commentID}
-                    className="bg-slate-900/60 p-4 rounded-xl border border-slate-700"
-                  >
-
-                    <p className="text-slate-200">
-                      {renderWithLinks(comment.content)}
-                    </p>
-
-                  </div>
-
-                ))}
-
-              </div>
-
             </div>
-
-          ))}
-
+          </div>
         </div>
 
+        {/* Tabs */}
+        <div className="tab-bar" style={{ marginBottom: "24px" }}>
+          <button onClick={() => setTab("links")} className={`tab-btn ${tab === "links" ? "active" : ""}`}>🔗 Links</button>
+          <button onClick={() => setTab("posts")} className={`tab-btn ${tab === "posts" ? "active" : ""}`}>📝 Posts</button>
+        </div>
+
+        {/* Links Tab */}
+        {tab === "links" && (
+          <div>
+            {links.length === 0 ? (
+              <div className="empty-state"><div style={{ fontSize: "2rem", marginBottom: "12px", opacity: 0.2 }}>🔗</div><p>No links yet. {community.isMember ? "Be the first!" : "Join to submit."}</p></div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "14px" }}>
+                {links.map((link) => {
+                  const thumb = extractVideoId(link.url) ? `https://img.youtube.com/vi/${extractVideoId(link.url)}/mqdefault.jpg` : null;
+                  const canDelete = user && (getUserId(user) === link.userID || isOwner);
+                  return (
+                    <div key={link.linkID} className="card" style={{ padding: "16px" }}>
+                      <div style={{ display: "flex", gap: "14px" }}>
+                        <button onClick={() => clickLink(link.linkID, link.url)} style={{ flexShrink: 0, width: "112px", height: "64px", borderRadius: "var(--radius-sm)", overflow: "hidden", background: "var(--bg-elevated)", border: "none", cursor: "pointer", padding: 0 }}>
+                          {thumb && <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                        </button>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h4 style={{ fontWeight: 500, fontSize: "0.88rem", margin: "0 0 3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{link.title}</h4>
+                          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0 0 3px" }}>@{link.username} · {timeAgo(link.createdAt)}</p>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                            <button onClick={() => clickLink(link.linkID, link.url)} className="btn btn-sm" style={{
+                              padding: "3px 10px", fontSize: "0.72rem",
+                              background: link.isClickedByMe ? "rgba(34,197,94,0.06)" : "transparent",
+                              border: `1px solid ${link.isClickedByMe ? "rgba(34,197,94,0.2)" : "var(--border)"}`,
+                              color: link.isClickedByMe ? "var(--success)" : "var(--text-secondary)",
+                            }}>
+                              🖱️ {link.clickCount} {link.isClickedByMe ? "✓" : "clicks"}
+                            </button>
+                            {canDelete && (
+                              <button onClick={() => deleteLink(link.linkID)} className="btn btn-sm" style={{ padding: "3px 8px", fontSize: "0.72rem", background: "rgba(220,38,38,0.06)", color: "var(--accent-hover)", border: "1px solid rgba(220,38,38,0.15)" }}>🗑️</button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Posts Tab */}
+        {tab === "posts" && (
+          <div>
+            {isOwner && (
+              <div className="card" style={{ marginBottom: "20px", padding: "24px" }}>
+                <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.05rem", margin: "0 0 16px" }}>Create Post</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <input className="input-field" placeholder="Post Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                  <textarea className="input-field" placeholder="Share something…" value={content} onChange={(e) => setContent(e.target.value)} rows={3} style={{ resize: "none" }} />
+                  <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files[0])} style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }} />
+                  <button onClick={createPost} className="btn btn-primary" style={{ alignSelf: "flex-start" }}>Post</button>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {posts.map((post) => (
+                <div key={post.postID} className="card" style={{ padding: "24px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px", cursor: "pointer" }} onClick={() => navigate(`/profile/${post.userID}`)}>
+                    {post.profileImageUrl ? <img src={post.profileImageUrl} alt="" style={{ width: "38px", height: "38px", borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)" }} /> : <div style={{ width: "38px", height: "38px", borderRadius: "50%", background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem" }}>{post.username?.charAt(0)}</div>}
+                    <div>
+                      <span style={{ fontWeight: 600, fontSize: "0.88rem" }}>{post.username}</span>
+                      <span style={{ color: "var(--text-muted)", fontSize: "0.72rem", marginLeft: "8px" }}>{timeAgo(post.createdAt)}</span>
+                    </div>
+                  </div>
+
+                  {editingPostID === post.postID ? (
+                    <>
+                      <input className="input-field" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} style={{ marginBottom: "8px" }} />
+                      <textarea className="input-field" value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={3} style={{ resize: "none", marginBottom: "12px" }} />
+                      <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                        <button onClick={() => savePostEdit(post.postID)} className="btn btn-primary btn-sm">Save</button>
+                        <button onClick={() => setEditingPostID(null)} className="btn btn-outline btn-sm">Cancel</button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 8px" }}>{post.title}</h3>
+                      <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", margin: "0 0 12px", wordBreak: "break-word", lineHeight: 1.6 }}>{renderWithLinks(post.content)}</p>
+                    </>
+                  )}
+                  {post.imageUrl && <img src={post.imageUrl} alt="" style={{ width: "100%", borderRadius: "var(--radius-md)", marginBottom: "12px" }} />}
+
+                  {isOwner && editingPostID !== post.postID && (
+                    <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                      <button onClick={() => { setEditingPostID(post.postID); setEditTitle(post.title); setEditContent(post.content); }} className="btn btn-secondary btn-sm">✏️ Edit</button>
+                      <button onClick={() => deletePost(post.postID)} className="btn btn-sm" style={{ background: "rgba(220,38,38,0.06)", color: "var(--accent-hover)", border: "1px solid rgba(220,38,38,0.15)" }}>🗑️ Delete</button>
+                    </div>
+                  )}
+
+                  <button onClick={() => likePost(post.postID)} className="btn btn-sm" style={{ background: "rgba(244,63,94,0.06)", border: "1px solid rgba(244,63,94,0.15)", color: "#fb7185", marginBottom: "12px" }}>
+                    ❤️ {likes[post.postID] || 0} Likes
+                  </button>
+
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                    <input className="input-field" placeholder="Write a comment…" value={commentInputs[post.postID] || ""} onChange={(e) => setCommentInputs(p => ({ ...p, [post.postID]: e.target.value }))} style={{ flex: 1 }} />
+                    <button onClick={() => addComment(post.postID)} className="btn btn-primary btn-sm">Comment</button>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {(comments[post.postID] || []).map((c) => (
+                      <div key={c.commentID} style={{ background: "var(--bg-elevated)", padding: "10px 14px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
+                        <p style={{ fontSize: "0.84rem", margin: 0 }}>{renderWithLinks(c.content)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {posts.length === 0 && <div className="empty-state"><p>No posts yet.</p></div>}
+            </div>
+          </div>
+        )}
+
+        {/* Submit Link Modal */}
+        {showSubmitLink && (
+          <div className="modal-overlay" onClick={() => setShowSubmitLink(false)}>
+            <div className="card animate-scale-in" style={{ width: "100%", maxWidth: "440px", padding: "28px" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+                <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.15rem", margin: 0 }}>Submit a Link</h3>
+                <button onClick={() => setShowSubmitLink(false)} className="btn-ghost" style={{ fontSize: "1.2rem", padding: "4px 8px" }}>✕</button>
+              </div>
+              <form onSubmit={submitLink} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div><label className="label">YouTube URL</label><input className="input-field" placeholder="https://youtube.com/watch?v=…" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} required /></div>
+                <div><label className="label">Title</label><input className="input-field" placeholder="My awesome video" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} required minLength={3} /></div>
+                <button type="submit" disabled={submittingLink} className="btn btn-primary btn-lg" style={{ width: "100%" }}>{submittingLink ? "Submitting…" : "Submit Link →"}</button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Community Modal */}
+        {showEditCommunity && (
+          <div className="modal-overlay" onClick={() => setShowEditCommunity(false)}>
+            <div className="card animate-scale-in" style={{ width: "100%", maxWidth: "440px", padding: "28px" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+                <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.15rem", margin: 0 }}>Edit Community</h3>
+                <button onClick={() => setShowEditCommunity(false)} className="btn-ghost" style={{ fontSize: "1.2rem", padding: "4px 8px" }}>✕</button>
+              </div>
+              <form onSubmit={saveCommunityEdit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div><label className="label">Name</label><input className="input-field" value={editName} onChange={(e) => setEditName(e.target.value)} required minLength={3} /></div>
+                <div><label className="label">Description</label><textarea className="input-field" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={3} style={{ resize: "none" }} required minLength={10} /></div>
+                <div><label className="label">Niche</label>
+                  <select className="input-field" value={editNiche} onChange={(e) => setEditNiche(e.target.value)}>
+                    <option value="">General</option>
+                    {niches.map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <div><label className="label">Banner Image (optional)</label><input type="file" accept="image/*" onChange={(e) => setEditBanner(e.target.files[0])} style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }} /></div>
+                <button type="submit" disabled={saving} className="btn btn-primary btn-lg" style={{ width: "100%" }}>{saving ? "Saving…" : "Save Changes →"}</button>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
-
+      <Footer />
     </div>
-
   );
-
 }
-
-export default CommunityPage;

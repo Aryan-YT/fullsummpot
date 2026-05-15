@@ -45,7 +45,7 @@ namespace FullSummpotAPI.Migrations
 
                     b.HasKey("CommentID");
 
-                    b.ToTable("Comments");
+                    b.ToTable("Comments", (string)null);
                 });
 
             modelBuilder.Entity("FullSummpotAPI.Models.Community", b =>
@@ -75,7 +75,7 @@ namespace FullSummpotAPI.Migrations
 
                     b.HasKey("CommunityID");
 
-                    b.ToTable("Communities");
+                    b.ToTable("Communities", (string)null);
                 });
 
             modelBuilder.Entity("FullSummpotAPI.Models.CommunityMember", b =>
@@ -97,7 +97,7 @@ namespace FullSummpotAPI.Migrations
 
                     b.HasKey("CommunityMemberID");
 
-                    b.ToTable("CommunityMembers");
+                    b.ToTable("CommunityMembers", (string)null);
                 });
 
             modelBuilder.Entity("FullSummpotAPI.Models.Post", b =>
@@ -130,7 +130,7 @@ namespace FullSummpotAPI.Migrations
 
                     b.HasKey("PostID");
 
-                    b.ToTable("Posts");
+                    b.ToTable("Posts", (string)null);
                 });
 
             modelBuilder.Entity("FullSummpotAPI.Models.PostLike", b =>
@@ -152,7 +152,7 @@ namespace FullSummpotAPI.Migrations
 
                     b.HasKey("PostLikeID");
 
-                    b.ToTable("PostLikes");
+                    b.ToTable("PostLikes", (string)null);
                 });
 
             modelBuilder.Entity("FullSummpotAPI.Models.User", b =>
@@ -190,7 +190,7 @@ namespace FullSummpotAPI.Migrations
 
                     b.HasKey("UserID");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("FullSummpotAPI.Models.UserFollow", b =>
@@ -212,7 +212,7 @@ namespace FullSummpotAPI.Migrations
 
                     b.HasKey("UserFollowID");
 
-                    b.ToTable("UserFollows");
+                    b.ToTable("UserFollows", (string)null);
                 });
 #pragma warning restore 612, 618
         }
